@@ -1,4 +1,4 @@
-package domain.exception;
+package org.example.oms.domain.exception;
 
 public class OrderDomainException extends RuntimeException {
     public OrderDomainException(String message) { super(message); }

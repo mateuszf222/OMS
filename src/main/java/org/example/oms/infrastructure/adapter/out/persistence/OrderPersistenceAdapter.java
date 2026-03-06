@@ -1,10 +1,10 @@
-package infrastructure.adapter.out.persistence;
+package org.example.oms.infrastructure.adapter.out.persistence;
 
-import application.port.out.OrderRepository;
-import domain.model.Money;
-import domain.model.Order;
-import domain.model.OrderItem;
-import domain.model.OrderStatus;
+import org.example.oms.application.port.out.OrderRepository;
+import org.example.oms.domain.model.Money;
+import org.example.oms.domain.model.Order;
+import org.example.oms.domain.model.OrderItem;
+import org.example.oms.domain.model.OrderStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.Currency;

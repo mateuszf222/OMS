@@ -1,12 +1,12 @@
-package application.service;
+package org.example.oms.application.service;
 
-import application.port.in.CreateOrderCommand;
-import application.port.in.CreateOrderUseCase;
-import application.port.out.OrderEventPublisher;
-import application.port.out.OrderRepository;
-import domain.model.Money;
-import domain.model.Order;
-import domain.model.OrderItem;
+import org.example.oms.application.port.in.CreateOrderCommand;
+import org.example.oms.application.port.in.CreateOrderUseCase;
+import org.example.oms.application.port.out.OrderEventPublisher;
+import org.example.oms.application.port.out.OrderRepository;
+import org.example.oms.domain.model.Money;
+import org.example.oms.domain.model.Order;
+import org.example.oms.domain.model.OrderItem;
 
 import java.util.List;
 import java.util.UUID;

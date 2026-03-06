@@ -1,4 +1,4 @@
-package application.port.in;
+package org.example.oms.application.port.in;
 
 import java.util.UUID;
 

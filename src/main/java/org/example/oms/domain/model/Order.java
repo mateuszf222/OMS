@@ -1,6 +1,6 @@
-package domain.model;
+package org.example.oms.domain.model;
 
-import domain.exception.OrderDomainException;
+import org.example.oms.domain.exception.OrderDomainException;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

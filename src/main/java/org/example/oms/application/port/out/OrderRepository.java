@@ -1,6 +1,6 @@
-package application.port.out;
+package org.example.oms.application.port.out;
 
-import domain.model.Order;
+import org.example.oms.domain.model.Order;
 import java.util.Optional;
 import java.util.UUID;
 

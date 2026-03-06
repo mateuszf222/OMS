@@ -1,4 +1,4 @@
-package infrastructure.adapter.out.persistence;
+package org.example.oms.infrastructure.adapter.out.persistence;
 
 import jakarta.persistence.*;
 import lombok.*;
