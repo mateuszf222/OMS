@@ -33,3 +33,5 @@ build/
 .vscode/
 
 psql.txt
+info.txt
+.env
