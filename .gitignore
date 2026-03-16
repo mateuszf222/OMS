@@ -35,3 +35,4 @@ build/
 psql.txt
 info.txt
 .env
+repomix-output.txt
