@@ -2,6 +2,7 @@ package org.example.orderservice.infrastructure.adapter.out.persistence.outbox;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.example.orderservice.application.port.out.OrderEventPublisher;
 import org.example.orderservice.domain.exception.OrderDomainException;
 import org.example.orderservice.domain.model.Order;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Component
 public class OutboxOrderEventPublisher implements OrderEventPublisher {
 
@@ -32,6 +34,9 @@ public class OutboxOrderEventPublisher implements OrderEventPublisher {
         );
 
         try {
+            String payload = objectMapper.writeValueAsString(eventPayload);
+            log.info("Outbox Publisher - Zbudowano payload: {}", payload);
+
             OutboxEventJpaEntity outboxEvent = OutboxEventJpaEntity.builder()
                     .id(UUID.randomUUID())
                     .aggregateType("Order")

@@ -16,9 +16,9 @@ public class OutboxMessageRelay {
 
     private static final Logger log = LoggerFactory.getLogger("OutboxMessageRelay.java");
     private final OutboxEventJpaRepository outboxRepository;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
-    public OutboxMessageRelay(OutboxEventJpaRepository outboxRepository, KafkaTemplate<String, Object> kafkaTemplate) {
+    public OutboxMessageRelay(OutboxEventJpaRepository outboxRepository, KafkaTemplate<String, String> kafkaTemplate) {
         this.outboxRepository = outboxRepository;
         this.kafkaTemplate = kafkaTemplate;
     }
@@ -38,6 +38,7 @@ public class OutboxMessageRelay {
 
         for (OutboxEventJpaEntity event : unprocessedEvents) {
             try {
+                log.info("Outbox Relay - Wysyłanie na Kafkę. ID: {}, Payload: {}", event.getId(), event.getPayload());
                 // Wysyłamy surowy string (JSON), ponieważ Outbox zapisał go już w tej formie.
                 // Ustawiając topic na "order-events"
                 kafkaTemplate.send("order-events", event.getAggregateId(), event.getPayload())
