@@ -32,11 +32,11 @@ spring:
     bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
       retries: 3
     consumer:
-      group-id: order-service-group
+      group-id: payment-service-group
       auto-offset-reset: earliest
       enable-auto-commit: false
 
@@ -46,4 +46,10 @@ spring:
         jwt:
           issuer-uri: http://localhost:8081/realms/enterprise-oms
 
-
+logging:
+  level:
+    org.apache.kafka: OFF
+    kafka: OFF
+    kafka.consumer: OFF
+    kafka.producer: OFF
+    org.hibernate: ERROR
