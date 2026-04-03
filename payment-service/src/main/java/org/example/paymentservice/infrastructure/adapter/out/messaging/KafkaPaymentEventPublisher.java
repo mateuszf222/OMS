@@ -17,26 +17,26 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
+    private void sendEvent(String topic, String key, Object event) {
+        try {
+            String payload = objectMapper.writeValueAsString(event);
+            log.info("Payment Publisher - Wysyłanie eventu na Kafkę [{}]: {}", topic, payload);
+            kafkaTemplate.send(topic, key, payload);
+        } catch (JsonProcessingException e) {
+            log.error("Payment Publisher - Błąd serializacji eventu", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public void publishPaymentCompletedEvent(Payment payment) {
         PaymentCompletedEvent event = new PaymentCompletedEvent(payment.getOrderId(), payment.getId());
-        sendEvent(payment.getOrderId().toString(), event);
+        sendEvent("payment-completed-events", payment.getOrderId().toString(), event);
     }
 
     @Override
     public void publishPaymentFailedEvent(Payment payment) {
         PaymentFailedEvent event = new PaymentFailedEvent(payment.getOrderId(), payment.getId(), "Payment processing failed");
-        sendEvent(payment.getOrderId().toString(), event);
-    }
-
-    private void sendEvent(String key, Object event) {
-        try {
-            String payload = objectMapper.writeValueAsString(event);
-            log.info("Payment Publisher - Wysyłanie eventu na Kafkę: {}", payload);
-            kafkaTemplate.send("payment-events", key, payload);
-        } catch (JsonProcessingException e) {
-            log.error("Payment Publisher - Błąd serializacji eventu", e);
-            throw new RuntimeException(e);
-        }
+        sendEvent("payment-failed-events", payment.getOrderId().toString(), event);
     }
 }

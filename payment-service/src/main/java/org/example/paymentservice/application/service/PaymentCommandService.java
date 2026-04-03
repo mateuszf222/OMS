@@ -34,8 +34,6 @@ public class PaymentCommandService implements ProcessPaymentUseCase {
     }
 
     private void simulatePaymentProcessing(Payment payment) {
-        if (payment.getAmount().doubleValue() > 10000) {
-            throw new RuntimeException("Insufficient funds");
-        }
+        payment.validateLimits(); // Application service just orchestrates
     }
 }

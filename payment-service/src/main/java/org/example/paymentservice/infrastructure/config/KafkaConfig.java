@@ -7,12 +7,13 @@ import org.springframework.kafka.config.TopicBuilder;
 
 @Configuration
 public class KafkaConfig {
+    @Bean
+    public NewTopic paymentCompletedEventsTopic() {
+        return TopicBuilder.name("payment-completed-events").partitions(3).replicas(1).build();
+    }
 
     @Bean
-    public NewTopic paymentEventsTopic() {
-        return TopicBuilder.name("payment-events")
-                .partitions(3)
-                .replicas(1)
-                .build();
+    public NewTopic paymentFailedEventsTopic() {
+        return TopicBuilder.name("payment-failed-events").partitions(3).replicas(1).build();
     }
 }

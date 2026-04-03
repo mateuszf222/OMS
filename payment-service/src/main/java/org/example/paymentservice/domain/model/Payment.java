@@ -14,13 +14,14 @@ import java.util.UUID;
 @EqualsAndHashCode(of = "id")
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Payment {
-
     private final UUID id;
     private final UUID orderId;
     private final BigDecimal amount;
     private final String currency;
     private PaymentStatus status;
     private final ZonedDateTime createdAt;
+
+    private static final BigDecimal MAX_PAYMENT_LIMIT = new BigDecimal("10000.00");
 
     public static Payment initialize(UUID orderId, BigDecimal amount, String currency) {
         if (orderId == null || amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
@@ -45,5 +46,11 @@ public class Payment {
             throw new PaymentDomainException("Cannot fail payment in status: " + this.status);
         }
         this.status = PaymentStatus.FAILED;
+    }
+
+    public void validateLimits() {
+        if (this.amount.compareTo(MAX_PAYMENT_LIMIT) > 0) {
+            throw new PaymentDomainException("Insufficient funds: amount exceeds maximum limit.");
+        }
     }
 }
