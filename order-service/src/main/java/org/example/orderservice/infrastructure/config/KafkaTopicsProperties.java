@@ -13,4 +13,5 @@ public class KafkaTopicsProperties {
     private String orderEvents;
     private String paymentCompletedEvents;
     private String paymentFailedEvents;
+    private String orderService;
 }
