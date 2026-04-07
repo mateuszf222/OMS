@@ -36,6 +36,12 @@ spring:
       group-id: order-service-group
       auto-offset-reset: earliest
       enable-auto-commit: false
+    topics:
+      order-events: order-events
+      payment-completed-events: payment-completed-events
+      payment-failed-events: payment-failed-events
+      groups:
+        order-service: order-service-group
 
   security:
     oauth2:
