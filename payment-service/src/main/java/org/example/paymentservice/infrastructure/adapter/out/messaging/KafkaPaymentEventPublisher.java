@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.paymentservice.application.port.out.PaymentEventPublisher;
 import org.example.paymentservice.domain.model.Payment;
+import org.example.paymentservice.infrastructure.config.KafkaTopicsProperties;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
+    private final KafkaTopicsProperties topics;
 
     private void sendEvent(String topic, String key, Object event) {
         try {
@@ -31,12 +33,12 @@ public class KafkaPaymentEventPublisher implements PaymentEventPublisher {
     @Override
     public void publishPaymentCompletedEvent(Payment payment) {
         PaymentCompletedEvent event = new PaymentCompletedEvent(payment.getOrderId(), payment.getId());
-        sendEvent("payment-completed-events", payment.getOrderId().toString(), event);
+        sendEvent(topics.getPaymentCompletedEvents(), payment.getOrderId().toString(), event);
     }
 
     @Override
     public void publishPaymentFailedEvent(Payment payment) {
         PaymentFailedEvent event = new PaymentFailedEvent(payment.getOrderId(), payment.getId(), "Payment processing failed");
-        sendEvent("payment-failed-events", payment.getOrderId().toString(), event);
+        sendEvent(topics.getPaymentFailedEvents(), payment.getOrderId().toString(), event);
     }
 }
