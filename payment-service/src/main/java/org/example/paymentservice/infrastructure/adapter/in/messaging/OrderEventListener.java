@@ -16,7 +16,7 @@ public class OrderEventListener {
     private final ProcessPaymentUseCase processPaymentUseCase;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "order-events", groupId = "payment-service-group")
+    @KafkaListener(topics = "#{@kafkaTopicsProperties.orderEvents}", groupId = "#{@kafkaTopicsProperties.paymentService}")
     public void handleOrderCreatedEvent(String payload) {
         log.info("Payment Listener - Odebrano surowy payload z Kafki: {}", payload);
         try {
