@@ -1,5 +1,6 @@
 package org.example.paymentservice.infrastructure.config;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -13,5 +14,12 @@ public class KafkaTopicsProperties {
     private String orderEvents;
     private String paymentCompletedEvents;
     private String paymentFailedEvents;
-    private String paymentService;
+    private Groups groups;
+
+    @Getter
+    @Setter
+    public static class Groups {
+        @NotBlank
+        private String paymentService;
+    }
 }

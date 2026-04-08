@@ -15,13 +15,13 @@ public class KafkaPaymentEventListener {
     private final CompletePaymentUseCase completePaymentUseCase;
     private final CancelOrderUseCase cancelOrderUseCase;
 
-    @KafkaListener(topics = "#{@kafkaTopicsProperties.paymentCompletedEvents}", groupId = "#{@kafkaTopicsProperties.orderService}")
+    @KafkaListener(topics = "#{@kafkaTopicsProperties.paymentCompletedEvents}", groupId = "#{@kafkaTopicsProperties.groups.orderService}")
     public void handlePaymentCompleted(PaymentCompletedEvent event) {
         log.info("Odebrano potwierdzenie płatności dla zamówienia: {}", event.orderId());
         completePaymentUseCase.completePayment(event.orderId());
     }
 
-    @KafkaListener(topics = "#{@kafkaTopicsProperties.paymentFailedEvents}", groupId = "#{@kafkaTopicsProperties.orderService}")
+    @KafkaListener(topics = "#{@kafkaTopicsProperties.paymentFailedEvents}", groupId = "#{@kafkaTopicsProperties.groups.orderService}")
     public void handlePaymentFailed(PaymentFailedEvent event) {
         log.info("Odebrano odrzucenie płatności dla zamówienia: {}", event.orderId());
         cancelOrderUseCase.cancelOrder(event.orderId(), event.reason());
