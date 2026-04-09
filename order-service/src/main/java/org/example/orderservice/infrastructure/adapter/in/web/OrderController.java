@@ -1,8 +1,11 @@
 package org.example.orderservice.infrastructure.adapter.in.web;
 
+import lombok.RequiredArgsConstructor;
 import org.example.orderservice.application.port.in.CreateOrderCommand;
 import org.example.orderservice.application.port.in.CreateOrderUseCase;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,17 +18,18 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/orders")
+@RequiredArgsConstructor
 public class OrderController {
 
     private final CreateOrderUseCase createOrderUseCase;
 
-    public OrderController(CreateOrderUseCase createOrderUseCase) {
-        this.createOrderUseCase = createOrderUseCase;
-    }
-
     @PostMapping
-    public ResponseEntity<Void> createOrder(@RequestBody CreateOrderRequest request) {
-        CreateOrderCommand command = mapToCommand(request);
+    public ResponseEntity<Void> createOrder(
+            @RequestBody CreateOrderRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        UUID customerId = UUID.fromString(jwt.getSubject());
+        CreateOrderCommand command = mapToCommand(customerId, request);
         UUID orderId = createOrderUseCase.createOrder(command);
 
         URI location = ServletUriComponentsBuilder
@@ -37,7 +41,7 @@ public class OrderController {
         return ResponseEntity.created(location).build();
     }
 
-    private CreateOrderCommand mapToCommand(CreateOrderRequest request) {
+    private CreateOrderCommand mapToCommand(UUID customerId, CreateOrderRequest request) {
         var commandItems = request.items().stream()
                 .map(item -> new CreateOrderCommand.OrderItemCommand(
                         item.productId(),
@@ -47,6 +51,6 @@ public class OrderController {
                 ))
                 .toList();
 
-        return new CreateOrderCommand(request.customerId(), commandItems);
+        return new CreateOrderCommand(customerId, commandItems);
     }
 }

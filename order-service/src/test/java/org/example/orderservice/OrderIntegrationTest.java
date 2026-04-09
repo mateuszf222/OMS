@@ -76,8 +76,8 @@ class OrderIntegrationTest {
     @Test
     void shouldCreateOrderSaveToDbAndPublishKafkaEvent() throws Exception {
         UUID customerId = UUID.randomUUID();
+
         CreateOrderRequest request = new CreateOrderRequest(
-                customerId,
                 List.of(
                         new CreateOrderRequest.OrderItemRequest(
                                 UUID.randomUUID(),
@@ -91,7 +91,7 @@ class OrderIntegrationTest {
         mockMvc.perform(post("/api/v1/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
-                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                        .with(jwt().jwt(jwt -> jwt.subject(customerId.toString())).authorities(new SimpleGrantedAuthority("ROLE_USER"))))
                 .andExpect(status().isCreated());
 
         assertThat(orderJpaRepository.findAll()).hasSize(1);
