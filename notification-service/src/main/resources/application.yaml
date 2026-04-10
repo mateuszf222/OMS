@@ -24,6 +24,9 @@ spring:
           auth: true
           starttls:
             enable: true
+  output:
+    ansi:
+      enabled: always
 
 eureka:
   client:

@@ -48,6 +48,11 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8081/realms/enterprise-oms
+
+  output:
+    ansi:
+      enabled: always
+
 eureka:
   client:
     service-url:
