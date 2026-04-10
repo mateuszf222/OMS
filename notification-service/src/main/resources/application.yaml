@@ -39,3 +39,12 @@ logging:
     kafka.consumer: OFF
     kafka.producer: OFF
     org.hibernate: ERROR
+
+resilience4j:
+  retry:
+    instances:
+      mailtrapRetry:
+        max-attempts: 5
+        wait-duration: 2s
+        retry-exceptions:
+          - org.springframework.mail.MailException
