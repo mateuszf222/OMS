@@ -6,3 +6,5 @@ postman.txt
 keycloak.txt
 .idea/
 order_lifecycle.txt
+run_oms.ps1
+stop_oms.ps1
