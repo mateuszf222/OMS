@@ -1,5 +1,6 @@
 package org.example.orderservice.infrastructure.adapter.out.persistence;
 
+import lombok.RequiredArgsConstructor;
 import org.example.orderservice.application.port.out.OrderRepository;
 import org.example.orderservice.domain.model.Money;
 import org.example.orderservice.domain.model.Order;
@@ -13,13 +14,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Component
+@RequiredArgsConstructor
 public class OrderPersistenceAdapter implements OrderRepository {
 
     private final OrderJpaRepository jpaRepository;
-
-    public OrderPersistenceAdapter(OrderJpaRepository jpaRepository) {
-        this.jpaRepository = jpaRepository;
-    }
 
     @Override
     public Order save(Order order) {
