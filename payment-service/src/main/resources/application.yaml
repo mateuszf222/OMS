@@ -70,3 +70,11 @@ logging:
     kafka.consumer: OFF
     kafka.producer: OFF
     org.hibernate: ERROR
+
+payu:
+  base-url: https://secure.snd.payu.com
+  pos-id: ${PAYU_POS_ID}
+  client-id: ${PAYU_CLIENT_ID}
+  client-secret: ${PAYU_CLIENT_SECRET}
+  second-key: ${PAYU_SECOND_KEY}
+  notify-url: ${PAYU_NOTIFY_URL}

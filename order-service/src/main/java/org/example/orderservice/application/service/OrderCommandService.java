@@ -1,5 +1,6 @@
 package org.example.orderservice.application.service;
 
+import lombok.RequiredArgsConstructor;
 import org.example.orderservice.application.port.in.CreateOrderCommand;
 import org.example.orderservice.application.port.in.CreateOrderUseCase;
 import org.example.orderservice.application.port.out.OrderEventPublisher;
@@ -7,19 +8,17 @@ import org.example.orderservice.application.port.out.OrderRepository;
 import org.example.orderservice.domain.model.Money;
 import org.example.orderservice.domain.model.Order;
 import org.example.orderservice.domain.model.OrderItem;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 
+@Service
+@RequiredArgsConstructor
 public class OrderCommandService implements CreateOrderUseCase {
 
     private final OrderRepository orderRepository;
     private final OrderEventPublisher eventPublisher;
-
-    public OrderCommandService(OrderRepository orderRepository, OrderEventPublisher eventPublisher) {
-        this.orderRepository = orderRepository;
-        this.eventPublisher = eventPublisher;
-    }
 
     @Override
     public UUID createOrder(CreateOrderCommand command) {
