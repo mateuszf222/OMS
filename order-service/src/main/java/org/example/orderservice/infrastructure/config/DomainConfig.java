@@ -13,9 +13,8 @@ public class DomainConfig {
     @Bean
     @Transactional
     public OrderCommandService orderCommandService(
-            OrderRepository orderRepository,
-            OrderEventPublisher eventPublisher) {
+            OrderRepository orderRepository) {
 
-        return new OrderCommandService(orderRepository, eventPublisher);
+        return new OrderCommandService(orderRepository);
     }
 }

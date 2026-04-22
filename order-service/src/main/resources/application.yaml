@@ -36,6 +36,8 @@ spring:
       group-id: order-service-group
       auto-offset-reset: earliest
       enable-auto-commit: false
+    listener:
+      ack-mode: manual_immediate
     topics:
       order-events: order-events
       payment-completed-events: payment-completed-events

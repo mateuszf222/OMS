@@ -9,3 +9,5 @@ order_lifecycle.txt
 run_oms.ps1
 stop_oms.ps1
 curl.txt
+kafka.txt
+ARCHITECTURE.md
