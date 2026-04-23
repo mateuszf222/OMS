@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.orderservice.application.port.in.CancelOrderUseCase;
 import org.example.orderservice.application.port.in.CompletePaymentUseCase;
-import org.example.orderservice.application.port.out.OrderRepository;
-import org.example.orderservice.domain.model.OrderStatus;
+import org.example.orderservice.domain.exception.OrderDomainException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
@@ -17,29 +17,25 @@ public class KafkaPaymentEventListener {
 
     private final CompletePaymentUseCase completePaymentUseCase;
     private final CancelOrderUseCase cancelOrderUseCase;
-    private final OrderRepository orderRepository;
 
     @KafkaListener(topics = "#{@kafkaTopicsProperties.paymentCompletedEvents}", groupId = "#{@kafkaTopicsProperties.groups.orderService}")
     public void handlePaymentCompleted(PaymentCompletedEvent event, Acknowledgment acknowledgment) {
         log.info("Received PaymentCompletedEvent for orderId: {}", event.orderId());
 
         try {
-            orderRepository.findById(event.orderId()).ifPresentOrElse(
-                    order -> {
-                        if (order.getStatus() == OrderStatus.PENDING) {
-                            completePaymentUseCase.completePayment(event.orderId());
-                            log.info("Order {} confirmed successfully", event.orderId());
-                        } else {
-                            log.info("Order {} already in status {}. Skipping duplicate event.",
-                                    event.orderId(), order.getStatus());
-                        }
-                    },
-                    () -> log.warn("Order {} not found. Ignoring PaymentCompletedEvent.", event.orderId())
-            );
-
+            completePaymentUseCase.completePayment(event.orderId());
+            log.info("Order {} confirmed successfully", event.orderId());
             acknowledgment.acknowledge();
+
+        } catch (OrderDomainException e) {
+            log.warn("Idempotent skip for order {}: {}", event.orderId(), e.getMessage());
+            acknowledgment.acknowledge();
+
+        } catch (OptimisticLockingFailureException e) {
+            log.warn("Concurrent modification detected for order {}. Event will be redelivered.", event.orderId());
+
         } catch (Exception e) {
-            log.error("Failed to process PaymentCompletedEvent for orderId: {}", event.orderId(), e);
+            log.error("Unexpected error processing PaymentCompletedEvent for orderId: {}", event.orderId(), e);
             throw e;
         }
     }
@@ -49,22 +45,19 @@ public class KafkaPaymentEventListener {
         log.info("Received PaymentFailedEvent for orderId: {}", event.orderId());
 
         try {
-            orderRepository.findById(event.orderId()).ifPresentOrElse(
-                    order -> {
-                        if (order.getStatus() == OrderStatus.PENDING) {
-                            cancelOrderUseCase.cancelOrder(event.orderId(), event.reason());
-                            log.info("Order {} cancelled successfully due to: {}", event.orderId(), event.reason());
-                        } else {
-                            log.info("Order {} already in status {}. Skipping duplicate event.",
-                                    event.orderId(), order.getStatus());
-                        }
-                    },
-                    () -> log.warn("Order {} not found. Ignoring PaymentFailedEvent.", event.orderId())
-            );
-
+            cancelOrderUseCase.cancelOrder(event.orderId(), event.reason());
+            log.info("Order {} cancelled successfully due to: {}", event.orderId(), event.reason());
             acknowledgment.acknowledge();
+
+        } catch (OrderDomainException e) {
+            log.warn("Idempotent skip for order {}: {}", event.orderId(), e.getMessage());
+            acknowledgment.acknowledge();
+
+        } catch (OptimisticLockingFailureException e) {
+            log.warn("Concurrent modification detected for order {}. Event will be redelivered.", event.orderId());
+
         } catch (Exception e) {
-            log.error("Failed to process PaymentFailedEvent for orderId: {}", event.orderId(), e);
+            log.error("Unexpected error processing PaymentFailedEvent for orderId: {}", event.orderId(), e);
             throw e;
         }
     }

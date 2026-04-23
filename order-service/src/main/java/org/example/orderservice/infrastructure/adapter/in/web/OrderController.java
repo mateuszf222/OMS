@@ -1,8 +1,10 @@
 package org.example.orderservice.infrastructure.adapter.in.web;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.orderservice.application.port.in.CreateOrderCommand;
 import org.example.orderservice.application.port.in.CreateOrderUseCase;
+import org.example.orderservice.domain.exception.InvalidCurrencyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -25,7 +27,7 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<Void> createOrder(
-            @RequestBody CreateOrderRequest request,
+            @Valid @RequestBody CreateOrderRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
         UUID customerId = UUID.fromString(jwt.getSubject());
@@ -43,12 +45,21 @@ public class OrderController {
 
     private CreateOrderCommand mapToCommand(UUID customerId, CreateOrderRequest request) {
         var commandItems = request.items().stream()
-                .map(item -> new CreateOrderCommand.OrderItemCommand(
-                        item.productId(),
-                        item.quantity(),
-                        item.price(),
-                        Currency.getInstance(item.currency())
-                ))
+                .map(item -> {
+                    Currency currency;
+                    try {
+                        currency = Currency.getInstance(item.currency());
+                    } catch (IllegalArgumentException e) {
+                        throw new InvalidCurrencyException(item.currency());
+                    }
+
+                    return new CreateOrderCommand.OrderItemCommand(
+                            item.productId(),
+                            item.quantity(),
+                            item.price(),
+                            currency
+                    );
+                })
                 .toList();
 
         return new CreateOrderCommand(customerId, commandItems);

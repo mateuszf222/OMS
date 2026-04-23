@@ -17,7 +17,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
-public class PayUWebhookController {
+public class PayUWebhookController{
 
     private final PaymentWebhookService paymentWebhookService;
     private final PayUProperties payUProperties;
