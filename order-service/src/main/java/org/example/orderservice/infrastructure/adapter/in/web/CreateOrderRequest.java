@@ -25,7 +25,6 @@ public record CreateOrderRequest(
             BigDecimal price,
 
             @NotNull(message = "Waluta jest wymagana")
-            @Size(min = 3, max = 3, message = "Kod waluty musi mieć dokładnie 3 znaki (np. PLN, EUR)")
             String currency
     ) {}
 }

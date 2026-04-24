@@ -4,18 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.example.orderservice.application.port.out.OrderRepository;
-import org.example.orderservice.domain.model.Money;
 import org.example.orderservice.domain.model.Order;
-import org.example.orderservice.domain.model.OrderItem;
-import org.example.orderservice.domain.model.OrderStatus;
 import org.example.orderservice.infrastructure.adapter.out.messaging.OrderCreatedEvent;
 import org.example.orderservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaEntity;
 import org.example.orderservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaRepository;
 import org.springframework.stereotype.Component;
 
 import java.time.ZonedDateTime;
-import java.util.Currency;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,23 +21,22 @@ public class OrderPersistenceAdapter implements OrderRepository {
     private final OrderJpaRepository jpaRepository;
     private final OutboxEventJpaRepository outboxRepository;
     private final ObjectMapper objectMapper;
+    private final OrderEntityMapper mapper;
 
     @Override
     public Order save(Order order) {
-        OrderJpaEntity entity = toJpaEntity(order);
+        OrderJpaEntity entity = mapper.toJpaEntity(order);
         OrderJpaEntity savedEntity = jpaRepository.save(entity);
 
         publishOrderCreatedEventIfNew(order);
 
-        return toDomainModel(savedEntity);
+        return mapper.toDomainModel(savedEntity);
     }
-
 
     @Override
     public Optional<Order> findById(UUID id) {
-        return jpaRepository.findByIdWithItems(id).map(this::toDomainModel);
+        return jpaRepository.findByIdWithItems(id).map(mapper::toDomainModel);
     }
-
 
     private void publishOrderCreatedEventIfNew(Order order) {
         if (order.getVersion() == null) {
@@ -69,50 +63,5 @@ public class OrderPersistenceAdapter implements OrderRepository {
                 throw new RuntimeException("Failed to serialize OrderCreatedEvent", e);
             }
         }
-    }
-
-    private OrderJpaEntity toJpaEntity(Order order) {
-        OrderJpaEntity entity = OrderJpaEntity.builder()
-                .id(order.getId())
-                .customerId(order.getCustomerId())
-                .status(order.getStatus().name())
-                .totalAmount(order.getTotalAmount().amount())
-                .currency(order.getTotalAmount().currency().getCurrencyCode())
-                .createdAt(order.getCreatedAt())
-                .version(order.getVersion())
-                .build();
-
-        List<OrderItemJpaEntity> items = order.getItems().stream()
-                .map(item -> OrderItemJpaEntity.builder()
-                        .id(item.getId())
-                        .order(entity)
-                        .productId(item.getProductId())
-                        .quantity(item.getQuantity())
-                        .unitPrice(item.getUnitPrice().amount())
-                        .build())
-                .toList();
-
-        entity.setItems(items);
-        return entity;
-    }
-
-    private Order toDomainModel(OrderJpaEntity entity) {
-        List<OrderItem> domainItems = entity.getItems().stream()
-                .map(itemEntity -> new OrderItem(
-                        itemEntity.getId(),
-                        itemEntity.getProductId(),
-                        itemEntity.getQuantity(),
-                        new Money(itemEntity.getUnitPrice(), Currency.getInstance(entity.getCurrency()))
-                ))
-                .toList();
-
-        return Order.restore(
-                entity.getId(),
-                entity.getCustomerId(),
-                OrderStatus.valueOf(entity.getStatus()),
-                domainItems,
-                entity.getCreatedAt(),
-                entity.getVersion()
-        );
     }
 }
