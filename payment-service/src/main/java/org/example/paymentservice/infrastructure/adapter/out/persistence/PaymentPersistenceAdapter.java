@@ -27,6 +27,7 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
     private final PaymentJpaRepository jpaRepository;
     private final OutboxEventJpaRepository outboxRepository;
     private final ObjectMapper objectMapper;
+    private final PaymentEntityMapper mapper;
 
     @Override
     @Transactional
@@ -34,7 +35,7 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
         PaymentStatus previousStatus = findPreviousStatus(payment.getId());
         boolean isNewPayment = previousStatus == null;
 
-        PaymentJpaEntity entity = toJpaEntity(payment);
+        PaymentJpaEntity entity = mapper.toJpaEntity(payment);
         PaymentJpaEntity savedEntity = jpaRepository.save(entity);
 
         if (isNewPayment && payment.getStatus() == PaymentStatus.PENDING) {
@@ -45,17 +46,17 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
             publishPaymentFailedEvent(payment);
         }
 
-        return toDomainModel(savedEntity);
+        return mapper.toDomainModel(savedEntity);
     }
 
     @Override
     public Optional<Payment> findById(UUID id) {
-        return jpaRepository.findById(id).map(this::toDomainModel);
+        return jpaRepository.findById(id).map(mapper::toDomainModel);
     }
 
     @Override
     public Optional<Payment> findByOrderId(UUID orderId) {
-        return jpaRepository.findByOrderId(orderId).map(this::toDomainModel);
+        return jpaRepository.findByOrderId(orderId).map(mapper::toDomainModel);
     }
 
     private PaymentStatus findPreviousStatus(UUID paymentId) {
@@ -108,27 +109,5 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize " + eventType, e);
         }
-    }
-
-    private PaymentJpaEntity toJpaEntity(Payment payment) {
-        return PaymentJpaEntity.builder()
-                .id(payment.getId())
-                .orderId(payment.getOrderId())
-                .amount(payment.getAmount())
-                .currency(payment.getCurrency())
-                .status(payment.getStatus())
-                .createdAt(payment.getCreatedAt())
-                .build();
-    }
-
-    private Payment toDomainModel(PaymentJpaEntity entity) {
-        return Payment.restore(
-                entity.getId(),
-                entity.getOrderId(),
-                entity.getAmount(),
-                entity.getCurrency(),
-                entity.getStatus(),
-                entity.getCreatedAt()
-        );
     }
 }

@@ -18,6 +18,7 @@ public class OrderEventListener {
     private final ProcessPaymentUseCase processPaymentUseCase;
     private final PaymentRepository paymentRepository;
     private final ObjectMapper objectMapper;
+    private final OrderEventMapper mapper;
 
     @KafkaListener(topics = "#{@kafkaTopicsProperties.orderEvents}", groupId = "#{@kafkaTopicsProperties.groups.paymentService}")
     public void handleOrderCreatedEvent(String payload, Acknowledgment acknowledgment) {
@@ -25,7 +26,6 @@ public class OrderEventListener {
 
         try {
             OrderCreatedEvent event = objectMapper.readValue(payload, OrderCreatedEvent.class);
-
             boolean paymentExists = paymentRepository.findByOrderId(event.orderId()).isPresent();
 
             if (paymentExists) {
@@ -34,11 +34,7 @@ public class OrderEventListener {
                 return;
             }
 
-            ProcessPaymentCommand command = new ProcessPaymentCommand(
-                    event.orderId(),
-                    event.totalAmount(),
-                    event.currency()
-            );
+            ProcessPaymentCommand command = mapper.toCommand(event);
             processPaymentUseCase.processPayment(command);
 
             log.info("Payment processing initiated for orderId: {}", event.orderId());
