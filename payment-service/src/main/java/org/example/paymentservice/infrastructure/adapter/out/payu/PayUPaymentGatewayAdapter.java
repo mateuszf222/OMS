@@ -19,10 +19,10 @@ public class PayUPaymentGatewayAdapter implements PaymentGatewayPort {
     public String initiatePayment(Payment payment, String customerIp) {
         log.info("Gateway Adapter - Przygotowanie płatności w PayU dla zamówienia: {}", payment.getOrderId());
 
-        int amountInCents = payment.getAmount().multiply(BigDecimal.valueOf(100)).intValue();
+        int amountInCents = payment.getAmount().amount().multiply(BigDecimal.valueOf(100)).intValue();
         String orderIdStr = payment.getOrderId().toString();
         String paymentIdStr = payment.getId().toString();
-        String currencyCode = payment.getCurrency();
+        String currencyCode = payment.getAmount().currency();
 
         return payUClient.createPayment(
                 orderIdStr,

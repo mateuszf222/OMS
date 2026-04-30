@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.paymentservice.application.port.out.PaymentRepository;
+import org.example.paymentservice.domain.model.Money;
 import org.example.paymentservice.domain.model.Payment;
 import org.example.paymentservice.domain.model.PaymentStatus;
 import org.example.paymentservice.infrastructure.adapter.out.messaging.PaymentCompletedEvent;
@@ -69,8 +70,8 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
         PaymentInitiatedEvent event = new PaymentInitiatedEvent(
                 payment.getId(),
                 payment.getOrderId(),
-                payment.getAmount(),
-                payment.getCurrency()
+                payment.getAmount().amount(),
+                payment.getAmount().currency()
         );
         saveToOutbox("Payment", payment.getId().toString(), "PaymentInitiatedEvent", event);
     }

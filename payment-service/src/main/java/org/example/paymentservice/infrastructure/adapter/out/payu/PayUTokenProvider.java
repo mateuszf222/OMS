@@ -16,7 +16,6 @@ public class PayUTokenProvider {
     private final PayUProperties properties;
     private final RestClient restClient = RestClient.create();
 
-    // TODO: W przyszłości dodaj tu cache, np. @Cacheable("payu-token")
     public String getAccessToken() {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", "client_credentials");
