@@ -1,6 +1,7 @@
-package org.example.orderservice.infrastructure.adapter.in.web;
+package org.example.orderservice.infrastructure.adapter.in.web.mapper;
 
 import org.example.orderservice.application.port.in.CreateOrderCommand;
+import org.example.orderservice.infrastructure.adapter.in.web.dto.CreateOrderRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import java.util.UUID;
@@ -12,7 +13,6 @@ public interface OrderRequestMapper {
     @Mapping(target = "items", source = "request.items")
     CreateOrderCommand toCommand(UUID customerId, CreateOrderRequest request);
 
-    @Mapping(target = "price", source = "request.price")
     CreateOrderCommand.OrderItemCommand toOrderItemCommand(CreateOrderRequest.OrderItemRequest request);
 
 }

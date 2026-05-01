@@ -1,4 +1,4 @@
-package org.example.orderservice.infrastructure.adapter.in.web;
+package org.example.orderservice.infrastructure.adapter.in.web.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.orderservice.domain.exception.InvalidCurrencyException;

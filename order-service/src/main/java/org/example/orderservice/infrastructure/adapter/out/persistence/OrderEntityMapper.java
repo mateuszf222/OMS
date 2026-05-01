@@ -1,9 +1,6 @@
 package org.example.orderservice.infrastructure.adapter.out.persistence;
 
-import org.example.orderservice.domain.model.Money;
-import org.example.orderservice.domain.model.Order;
-import org.example.orderservice.domain.model.OrderItem;
-import org.example.orderservice.domain.model.OrderStatus;
+import org.example.orderservice.domain.model.*;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
@@ -24,6 +21,13 @@ public interface OrderEntityMapper {
     @Mapping(target = "unitPrice", source = "unitPrice.amount")
     @Mapping(target = "order", ignore = true)
     OrderItemJpaEntity toOrderItemJpaEntity(OrderItem item);
+
+    default List<OrderItemJpaEntity> mapOrderLines(OrderLines items) {
+        if (items == null) return null;
+        return items.toList().stream()
+                .map(this::toOrderItemJpaEntity)
+                .toList();
+    }
 
     @AfterMapping
     default void linkOrderItems(@MappingTarget OrderJpaEntity entity) {
