@@ -39,10 +39,15 @@ public class Order {
         return new Order(UUID.randomUUID(), customerId, OrderStatus.PENDING, items, ZonedDateTime.now());
     }
 
-    public static Order restore(UUID id, UUID customerId, OrderStatus status, List<OrderItem> items,
-                                ZonedDateTime createdAt, Long version) {
-        Order order = new Order(id, customerId, status, items, createdAt);
-        order.version = version;
+    public static Order restore(OrderState state) {
+        Order order = new Order(
+                state.id(),
+                state.customerId(),
+                state.status(),
+                state.lines().toList(), 
+                state.createdAt()
+        );
+        order.version = state.version();
         return order;
     }
 

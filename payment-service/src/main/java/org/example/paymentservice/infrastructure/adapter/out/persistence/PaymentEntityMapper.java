@@ -2,6 +2,7 @@ package org.example.paymentservice.infrastructure.adapter.out.persistence;
 
 import org.example.paymentservice.domain.model.Money;
 import org.example.paymentservice.domain.model.Payment;
+import org.example.paymentservice.domain.model.PaymentState;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -33,12 +34,12 @@ public interface PaymentEntityMapper {
 
         Money amount = Money.of(entity.getAmount(), entity.getCurrency());
 
-        return Payment.restore(
+        return Payment.restore(new PaymentState(
                 entity.getId(),
                 entity.getOrderId(),
                 amount,
                 entity.getStatus(),
-                entity.getCreatedAt()
+                entity.getCreatedAt())
         );
     }
 }

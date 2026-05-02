@@ -50,13 +50,13 @@ public interface OrderEntityMapper {
                 ))
                 .toList();
 
-        return Order.restore(
+        return Order.restore(new OrderState(
                 entity.getId(),
                 entity.getCustomerId(),
                 OrderStatus.valueOf(entity.getStatus()),
-                domainItems,
+                new OrderLines(domainItems),
                 entity.getCreatedAt(),
-                entity.getVersion()
+                entity.getVersion())
         );
     }
 }

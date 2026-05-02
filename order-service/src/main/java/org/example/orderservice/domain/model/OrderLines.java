@@ -1,7 +1,6 @@
 package org.example.orderservice.domain.model;
 
 import org.example.orderservice.domain.exception.OrderDomainException;
-import java.util.Collections;
 import java.util.List;
 
 public class OrderLines {
@@ -28,6 +27,6 @@ public class OrderLines {
     }
 
     public List<OrderItem> toList() {
-        return Collections.unmodifiableList(items);
+        return items;
     }
 }

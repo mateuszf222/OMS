@@ -2,6 +2,8 @@ package org.example.paymentservice.infrastructure.adapter.out.payu;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.paymentservice.application.port.out.PaymentGatewayOptions;
+import org.example.paymentservice.domain.model.Payment;
 import org.example.paymentservice.infrastructure.config.PayUProperties;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -17,17 +19,20 @@ public class PayUClient {
     private final RestClient payURestClient;
     private final PayUProperties properties;
 
-    public String createPayment(String orderId, String paymentId, int amountInCents, String currencyCode, String customerIp) {
+    public String createPayment(Payment payment, PaymentGatewayOptions options) {
+
+        String amountStr = String.valueOf(payment.getAmount().toCents());
+        String paymentIdStr = payment.getId().toString();
 
         PayUOrderRequest request = new PayUOrderRequest(
                 properties.getNotifyUrl(),
-                customerIp,
+                options.customerIp(),
                 properties.getPosId(),
-                "Zamówienie " + orderId,
-                currencyCode,
-                String.valueOf(amountInCents),
-                paymentId,
-                List.of(new PayUOrderRequest.Product("Zamówienie", String.valueOf(amountInCents), "1"))
+                "Zamówienie " + payment.getOrderId(),
+                payment.getAmount().currency(),
+                amountStr,
+                paymentIdStr,
+                List.of(new PayUOrderRequest.Product("Zamówienie", amountStr, "1"))
         );
 
         PayUOrderResponse response = payURestClient.post()

@@ -36,18 +36,13 @@ public class Payment {
         );
     }
 
-    public static Payment restore(UUID id,
-                                  UUID orderId,
-                                  Money amount,
-                                  PaymentStatus status,
-                                  ZonedDateTime createdAt) {
-
+    public static Payment restore(PaymentState state) {
         return new Payment(
-                id,
-                orderId,
-                amount,
-                status,
-                createdAt
+                state.id(),
+                state.orderId(),
+                state.amount(),
+                state.status(),
+                state.createdAt()
         );
     }
 

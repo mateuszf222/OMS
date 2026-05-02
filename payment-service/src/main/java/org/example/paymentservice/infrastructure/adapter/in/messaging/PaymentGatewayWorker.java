@@ -3,6 +3,7 @@ package org.example.paymentservice.infrastructure.adapter.in.messaging;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.paymentservice.application.port.out.PaymentGatewayOptions;
 import org.example.paymentservice.application.port.out.PaymentGatewayPort;
 import org.example.paymentservice.application.port.out.PaymentRepository;
 import org.example.paymentservice.domain.model.Payment;
@@ -29,7 +30,7 @@ public class PaymentGatewayWorker {
             Payment payment = paymentRepository.findById(event.paymentId())
                     .orElseThrow(() -> new RuntimeException("Payment not found: " + event.paymentId()));
 
-            String redirectUrl = paymentGatewayPort.initiatePayment(payment, "127.0.0.1");
+            String redirectUrl = paymentGatewayPort.initiatePayment(payment, PaymentGatewayOptions.standard("127.0.0.1"));
             log.info("Payment {} initiated successfully. Redirect URL: {}", event.paymentId(), redirectUrl);
 
             acknowledgment.acknowledge();
