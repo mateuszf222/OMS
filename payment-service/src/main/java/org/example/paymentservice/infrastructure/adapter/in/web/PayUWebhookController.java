@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.paymentservice.application.port.in.GatewayPaymentStatus;
 import org.example.paymentservice.application.service.PaymentWebhookService;
 import org.example.paymentservice.infrastructure.config.PayUProperties;
 import org.springframework.http.HttpStatus;
@@ -17,7 +18,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
-public class PayUWebhookController{
+public class PayUWebhookController {
 
     private final PaymentWebhookService paymentWebhookService;
     private final PayUProperties payUProperties;
@@ -38,15 +39,27 @@ public class PayUWebhookController{
         try {
             PayUNotification notification = objectMapper.readValue(rawBody, PayUNotification.class);
             UUID paymentId = UUID.fromString(notification.order().extOrderId());
+
             PayUStatus externalStatus = PayUStatus.fromString(notification.order().status());
 
-            paymentWebhookService.handleWebhook(paymentId, externalStatus);
+            GatewayPaymentStatus gatewayStatus = mapToGatewayStatus(externalStatus);
+
+            paymentWebhookService.handleWebhook(paymentId, gatewayStatus);
             return ResponseEntity.ok().build();
 
         } catch (Exception e) {
             log.error("Błąd podczas przetwarzania webhooka PayU", e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    private GatewayPaymentStatus mapToGatewayStatus(PayUStatus payUStatus) {
+        return switch (payUStatus) {
+            case COMPLETED -> GatewayPaymentStatus.SUCCESS;
+            case CANCELED, REJECTED -> GatewayPaymentStatus.FAILURE;
+            case NEW, PENDING -> GatewayPaymentStatus.PENDING;
+            case UNKNOWN -> GatewayPaymentStatus.UNKNOWN;
+        };
     }
 
     private boolean isSignatureValid(String signatureHeader, String rawBody) {

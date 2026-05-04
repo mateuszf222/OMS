@@ -16,23 +16,38 @@ import java.util.UUID;
 public class Payment {
     private final UUID id;
     private final UUID orderId;
-    private final BigDecimal amount;
-    private final String currency;
+    private final Money amount;
     private PaymentStatus status;
     private final ZonedDateTime createdAt;
+    private final UUID customerId;
 
-    private static final BigDecimal MAX_PAYMENT_LIMIT = new BigDecimal("10000.00");
+    private static final BigDecimal MAX_PAYMENT_LIMIT_VALUE = new BigDecimal("10000.00");
 
-    public static Payment initialize(UUID orderId, BigDecimal amount, String currency) {
-        if (orderId == null || amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+    public static Payment initialize(UUID orderId, UUID customerId, Money amount) {
+        if (orderId == null || customerId == null || amount == null || amount.amount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new PaymentDomainException("Invalid payment initialization parameters.");
         }
-        return new Payment(UUID.randomUUID(), orderId, amount, currency, PaymentStatus.PENDING, ZonedDateTime.now());
+        return new Payment(
+                UUID.randomUUID(),
+                orderId,
+                amount,
+                PaymentStatus.PENDING,
+                ZonedDateTime.now(),
+                customerId
+        );
     }
 
-    public static Payment restore(UUID id, UUID orderId, BigDecimal amount, String currency, PaymentStatus status, ZonedDateTime createdAt) {
-        return new Payment(id, orderId, amount, currency, status, createdAt);
+    public static Payment restore(PaymentState state) {
+        return new Payment(
+                state.id(),
+                state.orderId(),
+                state.amount(),
+                state.status(),
+                state.createdAt(),
+                state.customerId()
+        );
     }
+
 
     public void complete() {
         if (this.status != PaymentStatus.PENDING) {
@@ -49,8 +64,13 @@ public class Payment {
     }
 
     public void validateLimits() {
-        if (this.amount.compareTo(MAX_PAYMENT_LIMIT) > 0) {
-            throw new PaymentDomainException("Insufficient funds: amount exceeds maximum limit.");
+        Money maxLimit = new Money(
+                MAX_PAYMENT_LIMIT_VALUE,
+                this.amount.currency()
+        );
+
+        if (this.amount.isGreaterThan(maxLimit)) {
+            throw new PaymentDomainException("Amount exceeds maximum limit.");
         }
     }
 }

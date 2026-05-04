@@ -29,7 +29,7 @@ public class NotificationEventListener {
     public void handlePaymentCompletedEvents(String payload) {
         try {
             PaymentCompletedEvent event = objectMapper.readValue(payload, PaymentCompletedEvent.class);
-            notificationUseCase.sendPaymentSuccessNotification(event.orderId());
+            notificationUseCase.sendPaymentSuccessNotification(event.orderId(), event.customerId());
         } catch (Exception e) {
             log.error("Błąd przetwarzania zdarzenia z payment-completed-events: {}", payload, e);
         }
@@ -39,7 +39,7 @@ public class NotificationEventListener {
     public void handlePaymentFailedEvents(String payload) {
         try {
             PaymentFailedEvent event = objectMapper.readValue(payload, PaymentFailedEvent.class);
-            notificationUseCase.sendPaymentFailedNotification(event.orderId(), event.reason());
+            notificationUseCase.sendPaymentFailedNotification(event.orderId(), event.customerId(), event.reason());
         } catch (Exception e) {
             log.error("Błąd przetwarzania zdarzenia z payment-failed-events: {}", payload, e);
         }

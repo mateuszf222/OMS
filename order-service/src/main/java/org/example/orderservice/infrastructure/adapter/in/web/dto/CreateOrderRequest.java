@@ -1,4 +1,4 @@
-package org.example.orderservice.infrastructure.adapter.in.web;
+package org.example.orderservice.infrastructure.adapter.in.web.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;

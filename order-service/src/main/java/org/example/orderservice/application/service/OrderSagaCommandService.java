@@ -2,7 +2,9 @@ package org.example.orderservice.application.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.orderservice.application.port.in.CancelOrderCommand;
 import org.example.orderservice.application.port.in.CancelOrderUseCase;
+import org.example.orderservice.application.port.in.CompletePaymentCommand;
 import org.example.orderservice.application.port.in.CompletePaymentUseCase;
 import org.example.orderservice.application.port.out.OrderRepository;
 import org.example.orderservice.domain.exception.OrderNotFoundException;
@@ -21,29 +23,30 @@ public class OrderSagaCommandService implements CompletePaymentUseCase, CancelOr
 
     @Override
     @Transactional
-    public void completePayment(UUID orderId) {
-        log.debug("Attempting to complete payment for order: {}", orderId);
+    public void completePayment(CompletePaymentCommand command) {
+        log.debug("Attempting to complete payment for order: {} using paymentId: {}",
+                command.orderId(), command.paymentId());
 
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        Order order = orderRepository.findById(command.orderId())
+                .orElseThrow(() -> new OrderNotFoundException(command.orderId()));
 
         order.confirmPayment();
         orderRepository.save(order);
 
-        log.info("Payment completed for order: {}", orderId);
+        log.info("Payment completed for order: {}", command.orderId());
     }
 
     @Override
     @Transactional
-    public void cancelOrder(UUID orderId, String reason) {
-        log.debug("Attempting to cancel order: {} with reason: {}", orderId, reason);
+    public void cancelOrder(CancelOrderCommand command) {
+        log.debug("Attempting to cancel order: {} with reason: {}", command.orderId(), command.reason());
 
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        Order order = orderRepository.findById(command.orderId())
+                .orElseThrow(() -> new OrderNotFoundException(command.orderId()));
 
-        order.cancel(reason);
+        order.cancel(command.reason());
         orderRepository.save(order);
 
-        log.info("Order {} cancelled with reason: {}", orderId, reason);
+        log.info("Order {} cancelled with reason: {}", command.orderId(), command.reason());
     }
 }

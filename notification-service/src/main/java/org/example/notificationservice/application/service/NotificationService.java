@@ -3,6 +3,7 @@ package org.example.notificationservice.application.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.notificationservice.application.port.in.SendNotificationUseCase;
+import org.example.notificationservice.domain.EmailMessage;
 import org.example.notificationservice.infrastructure.adapter.out.mail.EmailSenderAdapter;
 import org.springframework.stereotype.Service;
 
@@ -17,28 +18,31 @@ public class NotificationService implements SendNotificationUseCase {
 
     @Override
     public void sendOrderCreatedNotification(UUID orderId, UUID customerId) {
-        String to = customerId.toString() + "@dummy-domain.com";
-        String subject = "Potwierdzenie przyjęcia zamówienia: " + orderId;
-        String text = String.format("Drogi kliencie,\n\nTwoje zamówienie %s zostało przyjęte i oczekuje na płatność.", orderId);
-
-        emailSenderAdapter.sendEmail(to, subject, text);
+        EmailMessage message = new EmailMessage(
+                customerId.toString() + "@dummy-domain.com",
+                "Potwierdzenie przyjęcia zamówienia: " + orderId,
+                String.format("Drogi kliencie,\n\nTwoje zamówienie %s zostało przyjęte i oczekuje na płatność.", orderId)
+        );
+        emailSenderAdapter.sendEmail(message);
     }
 
     @Override
-    public void sendPaymentSuccessNotification(UUID orderId) {
-        String to = "klient-zamowienia-" + orderId + "@dummy-domain.com";
-        String subject = "Płatność zakończona sukcesem dla zamówienia: " + orderId;
-        String text = String.format("Płatność za zamówienie %s zakończona sukcesem. Przystępujemy do realizacji!", orderId);
-
-        emailSenderAdapter.sendEmail(to, subject, text);
+    public void sendPaymentSuccessNotification(UUID orderId, UUID customerId) {
+        EmailMessage message = new EmailMessage(
+                customerId.toString() + "@dummy-domain.com",
+                "Płatność zakończona sukcesem dla zamówienia: " + orderId,
+                String.format("Płatność za zamówienie %s zakończona sukcesem. Przystępujemy do realizacji!", orderId)
+        );
+        emailSenderAdapter.sendEmail(message);
     }
 
     @Override
-    public void sendPaymentFailedNotification(UUID orderId, String reason) {
-        String to = "klient-zamowienia-" + orderId + "@dummy-domain.com";
-        String subject = "Płatność odrzucona dla zamówienia: " + orderId;
-        String text = String.format("Płatność za zamówienie %s została odrzucona.\nPowód: %s.\nZamówienie zostało anulowane.", orderId, reason);
-
-        emailSenderAdapter.sendEmail(to, subject, text);
+    public void sendPaymentFailedNotification(UUID orderId, UUID customerId, String reason) {
+        EmailMessage message = new EmailMessage(
+                customerId.toString() + "@dummy-domain.com",
+                "Płatność odrzucona dla zamówienia: " + orderId,
+                String.format("Płatność za zamówienie %s została odrzucona.\nPowód: %s.\nZamówienie zostało anulowane.", orderId, reason)
+        );
+        emailSenderAdapter.sendEmail(message);
     }
 }

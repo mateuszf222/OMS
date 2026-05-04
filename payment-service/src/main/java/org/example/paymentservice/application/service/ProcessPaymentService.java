@@ -19,7 +19,7 @@ public class ProcessPaymentService implements ProcessPaymentUseCase {
     @Override
     @Transactional
     public void processPayment(ProcessPaymentCommand command) {
-        Payment payment = Payment.initialize(command.orderId(), command.amount(), command.currency());
+        Payment payment = Payment.initialize(command.orderId(), command.customerId(), command.amount());
         payment.validateLimits();
         paymentRepository.save(payment);
 

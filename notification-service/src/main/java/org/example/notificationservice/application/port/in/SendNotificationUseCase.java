@@ -4,6 +4,6 @@ import java.util.UUID;
 
 public interface SendNotificationUseCase {
     void sendOrderCreatedNotification(UUID orderId, UUID customerId);
-    void sendPaymentSuccessNotification(UUID orderId);
-    void sendPaymentFailedNotification(UUID orderId, String reason);
+    void sendPaymentSuccessNotification(UUID orderId, UUID customerId);
+    void sendPaymentFailedNotification(UUID orderId, UUID customerId, String reason);
 }

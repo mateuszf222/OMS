@@ -5,7 +5,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.example.orderservice.infrastructure.adapter.in.web.CreateOrderRequest;
+import org.example.orderservice.infrastructure.adapter.in.web.dto.CreateOrderRequest;
 import org.example.orderservice.infrastructure.adapter.out.persistence.OrderJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

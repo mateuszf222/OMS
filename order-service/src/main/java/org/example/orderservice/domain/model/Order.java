@@ -1,13 +1,10 @@
 package org.example.orderservice.domain.model;
 
 import org.example.orderservice.domain.exception.OrderDomainException;
-import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,22 +15,17 @@ public class Order {
     private final UUID id;
     private final UUID customerId;
     private OrderStatus status;
-    private Money totalAmount;
     private final ZonedDateTime createdAt;
-    private Long version; // Optimistic locking
+    private Long version;
 
-    // Blokujemy automatyczny getter Lomboka, by chronić enkapsulację kolekcji
-    @Getter(AccessLevel.NONE)
-    private final List<OrderItem> items;
+    private final OrderLines items;
 
-    // Prywatny konstruktor wymusza tworzenie obiektu przez metody fabrykujące
     private Order(UUID id, UUID customerId, OrderStatus status, List<OrderItem> items, ZonedDateTime createdAt) {
         this.id = id;
         this.customerId = customerId;
         this.status = status;
-        this.items = new ArrayList<>(items);
+        this.items = new OrderLines(items);
         this.createdAt = createdAt;
-        this.totalAmount = calculateTotalAmount();
     }
 
     public static Order create(UUID customerId, List<OrderItem> items) {
@@ -47,10 +39,15 @@ public class Order {
         return new Order(UUID.randomUUID(), customerId, OrderStatus.PENDING, items, ZonedDateTime.now());
     }
 
-    public static Order restore(UUID id, UUID customerId, OrderStatus status, List<OrderItem> items,
-                                ZonedDateTime createdAt, Long version) {
-        Order order = new Order(id, customerId, status, items, createdAt);
-        order.version = version;
+    public static Order restore(OrderState state) {
+        Order order = new Order(
+                state.id(),
+                state.customerId(),
+                state.status(),
+                state.lines().toList(), 
+                state.createdAt()
+        );
+        order.version = state.version();
         return order;
     }
 
@@ -68,15 +65,8 @@ public class Order {
         this.status = OrderStatus.CANCELLED;
     }
 
-    private Money calculateTotalAmount() {
-        var currency = items.get(0).getUnitPrice().currency();
-        return items.stream()
-                .map(OrderItem::getSubtotal)
-                .reduce(Money.zero(currency), Money::add);
+    public Money getTotalAmount() {
+        return items.calculateTotal();
     }
 
-    // Własny getter dla bezpieczeństwa domeny
-    public List<OrderItem> getItems() {
-        return Collections.unmodifiableList(items);
-    }
 }
