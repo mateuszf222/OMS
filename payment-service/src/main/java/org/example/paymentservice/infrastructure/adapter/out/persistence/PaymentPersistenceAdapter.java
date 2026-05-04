@@ -79,7 +79,8 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
     private void publishPaymentCompletedEvent(Payment payment) {
         PaymentCompletedEvent event = new PaymentCompletedEvent(
                 payment.getOrderId(),
-                payment.getId()
+                payment.getId(),
+                payment.getCustomerId()
         );
         saveToOutbox("Payment", payment.getId().toString(), "PaymentCompletedEvent", event);
     }
@@ -88,6 +89,7 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
         PaymentFailedEvent event = new PaymentFailedEvent(
                 payment.getOrderId(),
                 payment.getId(),
+                payment.getCustomerId(),
                 "Payment processing failed"
         );
         saveToOutbox("Payment", payment.getId().toString(), "PaymentFailedEvent", event);

@@ -8,5 +8,6 @@ public record PaymentState(
         UUID orderId,
         Money amount,
         PaymentStatus status,
-        ZonedDateTime createdAt
+        ZonedDateTime createdAt,
+        UUID customerId
 ) {}

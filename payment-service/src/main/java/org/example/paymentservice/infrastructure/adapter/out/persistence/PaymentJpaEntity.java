@@ -34,4 +34,7 @@ public class PaymentJpaEntity {
 
     @Column(nullable = false)
     private ZonedDateTime createdAt;
+
+    @Column(nullable = false)
+    private UUID customerId;
 }

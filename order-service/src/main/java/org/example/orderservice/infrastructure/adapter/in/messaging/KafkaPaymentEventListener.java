@@ -2,7 +2,9 @@ package org.example.orderservice.infrastructure.adapter.in.messaging;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.orderservice.application.port.in.CancelOrderCommand;
 import org.example.orderservice.application.port.in.CancelOrderUseCase;
+import org.example.orderservice.application.port.in.CompletePaymentCommand;
 import org.example.orderservice.application.port.in.CompletePaymentUseCase;
 import org.example.orderservice.domain.exception.OrderDomainException;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -23,7 +25,9 @@ public class KafkaPaymentEventListener {
         log.info("Received PaymentCompletedEvent for orderId: {}", event.orderId());
 
         try {
-            completePaymentUseCase.completePayment(event.orderId());
+            completePaymentUseCase.completePayment(
+                    new CompletePaymentCommand(event.orderId(), event.paymentId())
+            );
             log.info("Order {} confirmed successfully", event.orderId());
             acknowledgment.acknowledge();
 
@@ -45,7 +49,7 @@ public class KafkaPaymentEventListener {
         log.info("Received PaymentFailedEvent for orderId: {}", event.orderId());
 
         try {
-            cancelOrderUseCase.cancelOrder(event.orderId(), event.reason());
+            cancelOrderUseCase.cancelOrder(new CancelOrderCommand(event.orderId(), event.reason()));
             log.info("Order {} cancelled successfully due to: {}", event.orderId(), event.reason());
             acknowledgment.acknowledge();
 

@@ -5,5 +5,6 @@ import java.util.UUID;
 
 public record ProcessPaymentCommand(
         UUID orderId,
+        UUID customerId,
         Money amount
 ) {}

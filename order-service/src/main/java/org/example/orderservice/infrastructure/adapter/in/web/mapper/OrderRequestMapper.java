@@ -14,5 +14,4 @@ public interface OrderRequestMapper {
     CreateOrderCommand toCommand(UUID customerId, CreateOrderRequest request);
 
     CreateOrderCommand.OrderItemCommand toOrderItemCommand(CreateOrderRequest.OrderItemRequest request);
-
 }

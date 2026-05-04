@@ -12,12 +12,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PaymentTest {
 
     private final UUID orderId = UUID.randomUUID();
+    private final UUID customerId = UUID.randomUUID();
 
     @Test
     void shouldInitializePaymentSuccessfully() {
         Money money = Money.of(new BigDecimal("100.50"), "PLN");
 
-        Payment payment = Payment.initialize(orderId, money);
+        Payment payment = Payment.initialize(orderId, customerId, money);
 
         assertThat(payment.getOrderId()).isEqualTo(orderId);
         assertThat(payment.getAmount().amount()).isEqualByComparingTo("100.50");
@@ -28,7 +29,7 @@ class PaymentTest {
 
     @Test
     void shouldCompletePayment() {
-        Payment payment = Payment.initialize(orderId, Money.of(new BigDecimal("100.00"), "PLN"));
+        Payment payment = Payment.initialize(orderId, customerId,Money.of(new BigDecimal("100.00"), "PLN"));
 
         payment.complete();
 
@@ -37,7 +38,7 @@ class PaymentTest {
 
     @Test
     void shouldFailPayment() {
-        Payment payment = Payment.initialize(orderId, Money.of(new BigDecimal("100.00"), "PLN"));
+        Payment payment = Payment.initialize(orderId, customerId,Money.of(new BigDecimal("100.00"), "PLN"));
 
         payment.fail();
 
@@ -46,7 +47,7 @@ class PaymentTest {
 
     @Test
     void shouldThrowExceptionWhenCompletingAlreadyCompletedPayment() {
-        Payment payment = Payment.initialize(orderId, Money.of(new BigDecimal("100.00"), "PLN"));
+        Payment payment = Payment.initialize(orderId, customerId,Money.of(new BigDecimal("100.00"), "PLN"));
         payment.complete();
 
         assertThatThrownBy(payment::complete)
@@ -56,14 +57,14 @@ class PaymentTest {
 
     @Test
     void shouldPassLimitValidationForValidAmount() {
-        Payment payment = Payment.initialize(orderId, Money.of(new BigDecimal("9999.99"), "PLN"));
+        Payment payment = Payment.initialize(orderId, customerId,Money.of(new BigDecimal("9999.99"), "PLN"));
 
         payment.validateLimits();
     }
 
     @Test
     void shouldThrowExceptionWhenAmountExceedsMaximumLimit() {
-        Payment payment = Payment.initialize(orderId, Money.of(new BigDecimal("10000.01"), "PLN"));
+        Payment payment = Payment.initialize(orderId, customerId,Money.of(new BigDecimal("10000.01"), "PLN"));
 
         assertThatThrownBy(payment::validateLimits)
                 .isInstanceOf(PaymentDomainException.class)

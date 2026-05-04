@@ -19,20 +19,21 @@ public class Payment {
     private final Money amount;
     private PaymentStatus status;
     private final ZonedDateTime createdAt;
+    private final UUID customerId;
 
     private static final BigDecimal MAX_PAYMENT_LIMIT_VALUE = new BigDecimal("10000.00");
 
-    public static Payment initialize(UUID orderId, Money amount) {
-        if (orderId == null || amount == null || amount.amount().compareTo(BigDecimal.ZERO) <= 0) {
+    public static Payment initialize(UUID orderId, UUID customerId, Money amount) {
+        if (orderId == null || customerId == null || amount == null || amount.amount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new PaymentDomainException("Invalid payment initialization parameters.");
         }
-
         return new Payment(
                 UUID.randomUUID(),
                 orderId,
                 amount,
                 PaymentStatus.PENDING,
-                ZonedDateTime.now()
+                ZonedDateTime.now(),
+                customerId
         );
     }
 
@@ -42,7 +43,8 @@ public class Payment {
                 state.orderId(),
                 state.amount(),
                 state.status(),
-                state.createdAt()
+                state.createdAt(),
+                state.customerId()
         );
     }
 

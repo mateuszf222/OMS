@@ -13,17 +13,17 @@ import java.math.BigDecimal;
 @Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true))
 public interface PaymentEntityMapper {
 
-    @Mapping(target = "amount", source = "amount", qualifiedByName = "moneyToAmount")
-    @Mapping(target = "currency", source = "amount", qualifiedByName = "moneyToCurrency")
+    @Mapping(target = "amount", source = "amount", qualifiedByName = "extractAmount")
+    @Mapping(target = "currency", source = "amount", qualifiedByName = "extractCurrency")
     PaymentJpaEntity toJpaEntity(Payment payment);
 
-    @Named("moneyToAmount")
-    default BigDecimal moneyToAmount(Money money) {
+    @Named("extractAmount")
+    default BigDecimal extractAmount(Money money) {
         return money.amount();
     }
 
-    @Named("moneyToCurrency")
-    default String moneyToCurrency(Money money) {
+    @Named("extractCurrency")
+    default String extractCurrency(Money money) {
         return money.currency();
     }
 
@@ -39,7 +39,8 @@ public interface PaymentEntityMapper {
                 entity.getOrderId(),
                 amount,
                 entity.getStatus(),
-                entity.getCreatedAt())
-        );
+                entity.getCreatedAt(),
+                entity.getCustomerId()
+        ));
     }
 }
