@@ -1,6 +1,7 @@
 package org.example.orderservice.infrastructure.adapter.out.messaging;
 
 import org.example.orderservice.domain.event.DomainEvent;
+import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
 import org.example.orderservice.domain.event.OrderCreatedDomainEvent;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,11 @@ public class DomainToIntegrationEventTranslator {
                     e.customerId(),
                     e.totalAmount().amount(),
                     e.totalAmount().currency().getCurrencyCode()
+            ));
+            case OrderCancelledDomainEvent e -> Optional.of(new OrderCancelledEvent(
+                    e.orderId(),
+                    e.customerId(),
+                    e.reason()
             ));
 
             // default -> Optional.empty(); // lub throw new UnsupportedOperationException

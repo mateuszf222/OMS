@@ -1,6 +1,7 @@
 package org.example.orderservice.domain.model;
 
 import org.example.orderservice.domain.event.DomainEvent;
+import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
 import org.example.orderservice.domain.event.OrderCreatedDomainEvent;
 import org.example.orderservice.domain.exception.OrderDomainException;
 import lombok.EqualsAndHashCode;
@@ -71,10 +72,21 @@ public class Order {
     }
 
     public void cancel(String reason) {
-        if (this.status == OrderStatus.CONFIRMED) {
-            throw new OrderDomainException("Nie można anulować zamówienia, które zostało już opłacone.");
+        if (this.status == OrderStatus.CANCELLED) {
+            throw new OrderDomainException(
+                    "Nie można anulować zamówienia w statusie: " + this.status
+            );
         }
+
+        OrderStatus previousStatus = this.status;
         this.status = OrderStatus.CANCELLED;
+
+        domainEvents.add(new OrderCancelledDomainEvent(
+                this.id,
+                this.customerId,
+                reason,
+                previousStatus
+        ));
     }
 
     public Money getTotalAmount() {

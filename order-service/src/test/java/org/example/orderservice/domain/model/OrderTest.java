@@ -58,15 +58,4 @@ class OrderTest {
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
     }
-
-    @Test
-    void shouldThrowExceptionWhenCancellingAlreadyConfirmedOrder() {
-        OrderItem item = new OrderItem(UUID.randomUUID(), UUID.randomUUID(), 1, new Money(new BigDecimal("50.00"), PLN));
-        Order order = Order.create(customerId, List.of(item));
-        order.confirmPayment();
-
-        assertThatThrownBy(() -> order.cancel("Rezygnacja"))
-                .isInstanceOf(OrderDomainException.class)
-                .hasMessageContaining("Nie można anulować zamówienia, które zostało już opłacone");
-    }
 }

@@ -2,10 +2,10 @@ package org.example.orderservice.infrastructure.adapter.in.messaging;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.orderservice.application.port.in.CancelOrderCommand;
-import org.example.orderservice.application.port.in.CancelOrderUseCase;
-import org.example.orderservice.application.port.in.CompletePaymentCommand;
-import org.example.orderservice.application.port.in.CompletePaymentUseCase;
+import org.example.orderservice.application.port.in.cancelorder.CancelOrderCommand;
+import org.example.orderservice.application.port.in.cancelorder.CancelOrderUseCase;
+import org.example.orderservice.application.port.in.completepayment.CompletePaymentCommand;
+import org.example.orderservice.application.port.in.completepayment.CompletePaymentUseCase;
 import org.example.orderservice.domain.exception.OrderDomainException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.kafka.annotation.KafkaListener;
