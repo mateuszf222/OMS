@@ -74,7 +74,8 @@ class OrderIntegrationTest {
     }
 
     @Test
-    void shouldCreateOrderSaveToDbAndPublishKafkaEvent() throws Exception {
+    void shouldCreateOrderSaveToDbAndPublishKafkaEvent() throws Exception
+    {
         UUID customerId = UUID.randomUUID();
 
         CreateOrderRequest request = new CreateOrderRequest(

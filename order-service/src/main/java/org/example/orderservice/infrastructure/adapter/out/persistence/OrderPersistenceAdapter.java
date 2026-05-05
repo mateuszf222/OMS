@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.example.orderservice.application.port.out.OrderRepository;
+import org.example.orderservice.domain.event.DomainEvent;
 import org.example.orderservice.domain.model.Order;
+import org.example.orderservice.infrastructure.adapter.out.messaging.DomainToIntegrationEventTranslator;
+import org.example.orderservice.infrastructure.adapter.out.messaging.IntegrationEvent;
 import org.example.orderservice.infrastructure.adapter.out.messaging.OrderCreatedEvent;
 import org.example.orderservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaEntity;
 import org.example.orderservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaRepository;
@@ -22,13 +25,14 @@ public class OrderPersistenceAdapter implements OrderRepository {
     private final OutboxEventJpaRepository outboxRepository;
     private final ObjectMapper objectMapper;
     private final OrderEntityMapper mapper;
+    private final DomainToIntegrationEventTranslator translator;
 
     @Override
     public Order save(Order order) {
         OrderJpaEntity entity = mapper.toJpaEntity(order);
         OrderJpaEntity savedEntity = jpaRepository.save(entity);
 
-        publishOrderCreatedEventIfNew(order);
+        publishDomainEvents(order);
 
         return mapper.toDomainModel(savedEntity);
     }
@@ -38,30 +42,28 @@ public class OrderPersistenceAdapter implements OrderRepository {
         return jpaRepository.findByIdWithItems(id).map(mapper::toDomainModel);
     }
 
-    private void publishOrderCreatedEventIfNew(Order order) {
-        if (order.getVersion() == null) {
-            OrderCreatedEvent eventPayload = new OrderCreatedEvent(
-                    order.getId(),
-                    order.getCustomerId(),
-                    order.getTotalAmount().amount(),
-                    order.getTotalAmount().currency().getCurrencyCode()
-            );
+    private void publishDomainEvents(Order order) {
+        for (DomainEvent domainEvent : order.pullDomainEvents()) {
+            translator.translate(domainEvent)
+                    .ifPresent(infraEvent -> saveToOutbox(order.getId(), domainEvent, infraEvent));
+        }
+    }
 
-            try {
-                OutboxEventJpaEntity outboxEvent = OutboxEventJpaEntity.builder()
-                        .id(UUID.randomUUID())
-                        .aggregateType("Order")
-                        .aggregateId(order.getId().toString())
-                        .eventType("OrderCreatedEvent")
-                        .payload(objectMapper.writeValueAsString(eventPayload))
-                        .createdAt(ZonedDateTime.now())
-                        .processed(false)
-                        .build();
+    private void saveToOutbox(UUID orderId, DomainEvent domainEvent, IntegrationEvent infraEvent) {
+        try {
+            OutboxEventJpaEntity outboxEvent = OutboxEventJpaEntity.builder()
+                    .id(UUID.randomUUID())
+                    .aggregateType("Order")
+                    .aggregateId(orderId.toString())
+                    .eventType(domainEvent.getClass().getSimpleName())
+                    .payload(objectMapper.writeValueAsString(infraEvent))
+                    .createdAt(ZonedDateTime.now())
+                    .processed(false)
+                    .build();
 
-                outboxRepository.save(outboxEvent);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Failed to serialize OrderCreatedEvent", e);
-            }
+            outboxRepository.save(outboxEvent);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize event", e);
         }
     }
 }

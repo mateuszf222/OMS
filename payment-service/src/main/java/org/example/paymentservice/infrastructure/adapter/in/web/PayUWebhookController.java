@@ -65,10 +65,14 @@ public class PayUWebhookController {
     private boolean isSignatureValid(String signatureHeader, String rawBody) {
         String expectedSignature = "";
         String[] parts = signatureHeader.split(";");
+
         for (String part : parts) {
-            if (part.trim().startsWith("signature=")) {
-                expectedSignature = part.trim().substring("signature=".length());
+            if (!part.trim().startsWith("signature=")) {
+                continue;
             }
+
+            expectedSignature = part.trim().substring("signature=".length());
+            break;
         }
 
         String concatenated = rawBody + payUProperties.getSecondKey();
