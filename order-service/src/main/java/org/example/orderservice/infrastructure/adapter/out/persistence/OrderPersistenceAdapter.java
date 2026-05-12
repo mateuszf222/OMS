@@ -8,7 +8,6 @@ import org.example.orderservice.domain.event.DomainEvent;
 import org.example.orderservice.domain.model.Order;
 import org.example.orderservice.infrastructure.adapter.out.messaging.DomainToIntegrationEventTranslator;
 import org.example.orderservice.infrastructure.adapter.out.messaging.IntegrationEvent;
-import org.example.orderservice.infrastructure.adapter.out.messaging.OrderCreatedEvent;
 import org.example.orderservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaEntity;
 import org.example.orderservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaRepository;
 import org.springframework.stereotype.Component;

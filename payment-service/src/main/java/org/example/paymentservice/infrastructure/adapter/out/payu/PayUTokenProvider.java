@@ -2,7 +2,7 @@ package org.example.paymentservice.infrastructure.adapter.out.payu;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.RequiredArgsConstructor;
-import org.example.paymentservice.infrastructure.config.PayUProperties;
+import org.example.paymentservice.infrastructure.config.payu.PayUProperties;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;

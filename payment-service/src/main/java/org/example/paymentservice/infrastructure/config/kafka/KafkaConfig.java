@@ -1,4 +1,4 @@
-package org.example.paymentservice.infrastructure.config;
+package org.example.paymentservice.infrastructure.config.kafka;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.admin.NewTopic;

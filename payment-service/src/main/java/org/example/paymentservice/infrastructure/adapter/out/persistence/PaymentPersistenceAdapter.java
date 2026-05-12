@@ -33,18 +33,19 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
     @Override
     @Transactional
     public Payment save(Payment payment) {
-        PaymentStatus previousStatus = findPreviousStatus(payment.getId());
-        boolean isNewPayment = previousStatus == null;
+        Optional<PaymentStatus> previousStatusOpt = findPreviousStatus(payment.getId());
 
         PaymentJpaEntity entity = mapper.toJpaEntity(payment);
         PaymentJpaEntity savedEntity = jpaRepository.save(entity);
 
-        if (isNewPayment && payment.getStatus() == PaymentStatus.PENDING) {
+        if (previousStatusOpt.isEmpty() && payment.getStatus() == PaymentStatus.PENDING) {
             publishPaymentInitiatedEvent(payment);
-        } else if (previousStatus == PaymentStatus.PENDING && payment.getStatus() == PaymentStatus.COMPLETED) {
-            publishPaymentCompletedEvent(payment);
-        } else if (previousStatus == PaymentStatus.PENDING && payment.getStatus() == PaymentStatus.FAILED) {
-            publishPaymentFailedEvent(payment);
+        } else if (previousStatusOpt.isPresent() && previousStatusOpt.get() == PaymentStatus.PENDING) {
+            if (payment.getStatus() == PaymentStatus.COMPLETED) {
+                publishPaymentCompletedEvent(payment);
+            } else if (payment.getStatus() == PaymentStatus.FAILED) {
+                publishPaymentFailedEvent(payment);
+            }
         }
 
         return mapper.toDomainModel(savedEntity);
@@ -60,10 +61,9 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
         return jpaRepository.findByOrderId(orderId).map(mapper::toDomainModel);
     }
 
-    private PaymentStatus findPreviousStatus(UUID paymentId) {
+    private Optional<PaymentStatus> findPreviousStatus(UUID paymentId) {
         return jpaRepository.findById(paymentId)
-                .map(PaymentJpaEntity::getStatus)
-                .orElse(null);
+                .map(PaymentJpaEntity::getStatus);
     }
 
     private void publishPaymentInitiatedEvent(Payment payment) {

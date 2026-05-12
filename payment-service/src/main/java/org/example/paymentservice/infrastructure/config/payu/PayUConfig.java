@@ -1,4 +1,4 @@
-package org.example.paymentservice.infrastructure.config;
+package org.example.paymentservice.infrastructure.config.payu;
 
 import org.example.paymentservice.infrastructure.adapter.out.payu.PayUTokenProvider;
 import org.springframework.context.annotation.Bean;

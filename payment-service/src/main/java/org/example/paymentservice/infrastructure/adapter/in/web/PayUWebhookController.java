@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.paymentservice.application.port.in.GatewayPaymentStatus;
 import org.example.paymentservice.application.service.PaymentWebhookService;
-import org.example.paymentservice.infrastructure.config.PayUProperties;
+import org.example.paymentservice.infrastructure.config.payu.PayUProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.DigestUtils;

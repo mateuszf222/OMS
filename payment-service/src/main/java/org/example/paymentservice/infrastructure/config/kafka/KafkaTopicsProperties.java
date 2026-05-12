@@ -1,4 +1,4 @@
-package org.example.paymentservice.infrastructure.config;
+package org.example.paymentservice.infrastructure.config.kafka;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

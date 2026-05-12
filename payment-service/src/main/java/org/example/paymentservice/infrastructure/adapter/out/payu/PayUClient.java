@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.paymentservice.application.port.out.PaymentGatewayOptions;
 import org.example.paymentservice.domain.model.Payment;
-import org.example.paymentservice.infrastructure.config.PayUProperties;
+import org.example.paymentservice.infrastructure.config.payu.PayUProperties;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;

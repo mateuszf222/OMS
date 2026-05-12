@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.example.paymentservice.domain.exception.PaymentDomainException;
+import org.example.paymentservice.domain.specification.Specification;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
@@ -63,14 +64,9 @@ public class Payment {
         this.status = PaymentStatus.FAILED;
     }
 
-    public void validateLimits() {
-        Money maxLimit = new Money(
-                MAX_PAYMENT_LIMIT_VALUE,
-                this.amount.currency()
-        );
-
-        if (this.amount.isGreaterThan(maxLimit)) {
-            throw new PaymentDomainException("Amount exceeds maximum limit.");
+    public void checkSpecification(Specification<Payment> specification) {
+        if (!specification.isSatisfiedBy(this)) {
+            throw new PaymentDomainException(specification.getReasonNotSatisfied());
         }
     }
 }
