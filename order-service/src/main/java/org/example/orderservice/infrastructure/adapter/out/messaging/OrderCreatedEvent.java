@@ -8,4 +8,4 @@ public record OrderCreatedEvent(
         UUID customerId,
         BigDecimal totalAmount,
         String currency
-) {}
+) implements IntegrationEvent {}

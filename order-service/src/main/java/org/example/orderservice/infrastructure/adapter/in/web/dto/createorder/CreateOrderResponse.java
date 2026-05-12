@@ -1,4 +1,4 @@
-package org.example.orderservice.infrastructure.adapter.in.web.dto;
+package org.example.orderservice.infrastructure.adapter.in.web.dto.createorder;
 
 import java.util.UUID;
 

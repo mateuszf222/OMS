@@ -1,10 +1,14 @@
 package org.example.orderservice.domain.model;
 
+import org.example.orderservice.domain.event.DomainEvent;
+import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
+import org.example.orderservice.domain.event.OrderCreatedDomainEvent;
 import org.example.orderservice.domain.exception.OrderDomainException;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,6 +23,7 @@ public class Order {
     private Long version;
 
     private final OrderLines items;
+    private final List<DomainEvent> domainEvents = new ArrayList<>();
 
     private Order(UUID id, UUID customerId, OrderStatus status, List<OrderItem> items, ZonedDateTime createdAt) {
         this.id = id;
@@ -36,7 +41,15 @@ public class Order {
         boolean mixed = items.stream().anyMatch(i -> !i.getUnitPrice().currency().equals(firstCurrency));
         if (mixed) throw new OrderDomainException("Produkty w zamówieniu muszą być w tej samej walucie.");
 
-        return new Order(UUID.randomUUID(), customerId, OrderStatus.PENDING, items, ZonedDateTime.now());
+        Order order = new Order(UUID.randomUUID(), customerId, OrderStatus.PENDING, items, ZonedDateTime.now());
+
+        order.domainEvents.add(new OrderCreatedDomainEvent(
+                order.getId(),
+                order.getCustomerId(),
+                order.getTotalAmount()
+        ));
+
+        return order;
     }
 
     public static Order restore(OrderState state) {
@@ -59,14 +72,31 @@ public class Order {
     }
 
     public void cancel(String reason) {
-        if (this.status == OrderStatus.CONFIRMED) {
-            throw new OrderDomainException("Nie można anulować zamówienia, które zostało już opłacone.");
+        if (this.status == OrderStatus.CANCELLED) {
+            throw new OrderDomainException(
+                    "Nie można anulować zamówienia w statusie: " + this.status
+            );
         }
+
+        OrderStatus previousStatus = this.status;
         this.status = OrderStatus.CANCELLED;
+
+        domainEvents.add(new OrderCancelledDomainEvent(
+                this.id,
+                this.customerId,
+                reason,
+                previousStatus
+        ));
     }
 
     public Money getTotalAmount() {
         return items.calculateTotal();
+    }
+
+    public List<DomainEvent> pullDomainEvents() {
+        List<DomainEvent> events = new ArrayList<>(domainEvents);
+        domainEvents.clear();
+        return events;
     }
 
 }

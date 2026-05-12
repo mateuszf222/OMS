@@ -36,9 +36,11 @@ public interface OrderEntityMapper {
 
     @AfterMapping
     default void linkOrderItems(@MappingTarget OrderJpaEntity entity) {
-        if (entity.getItems() != null) {
-            entity.getItems().forEach(item -> item.setOrder(entity));
+        if (entity.getItems() == null) {
+            return;
         }
+
+        entity.getItems().forEach(item -> item.setOrder(entity));
     }
 
     default Order toDomainModel(OrderJpaEntity entity) {
