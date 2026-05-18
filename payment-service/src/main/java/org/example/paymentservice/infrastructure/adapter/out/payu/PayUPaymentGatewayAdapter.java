@@ -2,9 +2,9 @@ package org.example.paymentservice.infrastructure.adapter.out.payu;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.paymentservice.application.port.out.PaymentGatewayOptions;
-import org.example.paymentservice.application.port.out.PaymentGatewayPort;
-import org.example.paymentservice.domain.model.Payment;
+import org.example.paymentservice.application.payment.port.out.PaymentGatewayOptions;
+import org.example.paymentservice.application.payment.port.out.PaymentGatewayPort;
+import org.example.paymentservice.domain.model.payment.Payment;
 import org.springframework.stereotype.Component;
 
 @Slf4j

@@ -1,12 +1,12 @@
-package org.example.paymentservice.application.service;
+package org.example.paymentservice.application.payment.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.paymentservice.application.port.in.GatewayPaymentStatus;
-import org.example.paymentservice.application.port.in.HandlePaymentWebhookUseCase;
-import org.example.paymentservice.application.port.out.PaymentRepository;
-import org.example.paymentservice.domain.model.Payment;
-import org.example.paymentservice.domain.model.PaymentStatus;
+import org.example.paymentservice.application.payment.port.in.GatewayPaymentStatus;
+import org.example.paymentservice.application.payment.port.in.HandlePaymentWebhookUseCase;
+import org.example.paymentservice.application.payment.port.out.PaymentRepository;
+import org.example.paymentservice.domain.model.payment.Payment;
+import org.example.paymentservice.domain.model.payment.PaymentStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

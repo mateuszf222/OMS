@@ -1,4 +1,4 @@
-package org.example.paymentservice.application.port.in;
+package org.example.paymentservice.application.payment.port.in;
 
 import java.util.UUID;
 

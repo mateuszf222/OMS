@@ -1,8 +1,8 @@
 package org.example.paymentservice.infrastructure.adapter.out.persistence;
 
 import org.example.paymentservice.domain.model.Money;
-import org.example.paymentservice.domain.model.Payment;
-import org.example.paymentservice.domain.model.PaymentState;
+import org.example.paymentservice.domain.model.payment.Payment;
+import org.example.paymentservice.domain.model.payment.PaymentState;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

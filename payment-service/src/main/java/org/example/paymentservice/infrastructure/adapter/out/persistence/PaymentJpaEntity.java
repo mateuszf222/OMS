@@ -2,7 +2,7 @@ package org.example.paymentservice.infrastructure.adapter.out.persistence;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.example.paymentservice.domain.model.PaymentStatus;
+import org.example.paymentservice.domain.model.payment.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;

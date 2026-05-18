@@ -1,10 +1,11 @@
-package org.example.paymentservice.domain.model;
+package org.example.paymentservice.domain.model.payment;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.example.paymentservice.domain.exception.PaymentDomainException;
+import org.example.paymentservice.domain.model.Money;
 import org.example.paymentservice.domain.specification.Specification;
 
 import java.math.BigDecimal;

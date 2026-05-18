@@ -1,6 +1,6 @@
 package org.example.paymentservice.infrastructure.adapter.in.messaging;
 
-import org.example.paymentservice.application.port.in.ProcessPaymentCommand;
+import org.example.paymentservice.application.payment.port.in.ProcessPaymentCommand;
 import org.example.paymentservice.domain.model.Money;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

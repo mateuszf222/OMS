@@ -1,4 +1,4 @@
-package org.example.paymentservice.application.port.out;
+package org.example.paymentservice.application.payment.port.out;
 
 public record PaymentGatewayOptions(
         String customerIp,

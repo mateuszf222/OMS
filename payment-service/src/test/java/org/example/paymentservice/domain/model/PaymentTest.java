@@ -1,7 +1,9 @@
 package org.example.paymentservice.domain.model;
 
 import org.example.paymentservice.domain.exception.PaymentDomainException;
-import org.example.paymentservice.domain.specification.MaxAmountSpecification;
+import org.example.paymentservice.domain.model.payment.Payment;
+import org.example.paymentservice.domain.model.payment.PaymentStatus;
+import org.example.paymentservice.domain.model.payment.MaxAmountSpecification;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

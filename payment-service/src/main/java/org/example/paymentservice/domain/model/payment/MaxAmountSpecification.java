@@ -1,6 +1,6 @@
-package org.example.paymentservice.domain.specification;
+package org.example.paymentservice.domain.model.payment;
 
-import org.example.paymentservice.domain.model.Payment;
+import org.example.paymentservice.domain.specification.Specification;
 
 import java.math.BigDecimal;
 

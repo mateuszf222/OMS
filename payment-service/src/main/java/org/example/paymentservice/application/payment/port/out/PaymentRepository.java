@@ -1,6 +1,6 @@
-package org.example.paymentservice.application.port.out;
+package org.example.paymentservice.application.payment.port.out;
 
-import org.example.paymentservice.domain.model.Payment;
+import org.example.paymentservice.domain.model.payment.Payment;
 
 import java.util.Optional;
 import java.util.UUID;
