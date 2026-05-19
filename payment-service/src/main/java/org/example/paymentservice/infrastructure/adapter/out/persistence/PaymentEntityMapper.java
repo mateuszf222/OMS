@@ -28,10 +28,6 @@ public interface PaymentEntityMapper {
     }
 
     default Payment toDomainModel(PaymentJpaEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-
         Money amount = Money.of(entity.getAmount(), entity.getCurrency());
 
         return Payment.restore(new PaymentState(

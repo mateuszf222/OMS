@@ -26,39 +26,31 @@ public class OutboxMessageRelay {
             "PaymentFailedEvent", "payment-failed-events"
     );
 
-    @Scheduled(fixedDelay = 2000)
+    @Scheduled(fixedDelay = 5000)
     @Transactional
     public void processOutboxEvents() {
         List<OutboxEventJpaEntity> unprocessedEvents = outboxRepository.findTop50UnprocessedEvents();
 
-        if (unprocessedEvents.isEmpty()) {
-            return;
-        }
-
-        log.info("Found {} unprocessed events in Outbox", unprocessedEvents.size());
-
         for (OutboxEventJpaEntity event : unprocessedEvents) {
+            String topic = EVENT_TOPIC_MAP.get(event.getEventType());
+
+            if (topic == null || topic.isBlank()) {
+                log.error("CRITICAL: Brak skonfigurowanego tematu Kafka dla eventu typu: {}. " +
+                        "Event ID: {} pozostaje nieprzetworzony!", event.getEventType(), event.getId());
+                continue;
+            }
+
             try {
-                String topic = EVENT_TOPIC_MAP.get(event.getEventType());
-                if (topic == null) {
-                    log.error("Unknown event type: {}. Marking as processed.", event.getEventType());
-                    event.setProcessed(true);
-                    outboxRepository.save(event);
-                    continue;
-                }
-
-                log.info("Relay - Sending to Kafka. Topic: {}, EventType: {}, AggregateId: {}",
-                        topic, event.getEventType(), event.getAggregateId());
-
-                kafkaTemplate.send(topic, event.getAggregateId(), event.getPayload())
-                        .get();
+                kafkaTemplate.send(topic, event.getAggregateId(), event.getPayload()).get(); // .get() wymusza synchroniczne potwierdzenie (blokuje do momentu sukcesu)
 
                 event.setProcessed(true);
                 outboxRepository.save(event);
-                log.debug("Successfully published event ID: {}", event.getId());
+
+                log.debug("Pomyślnie wysłano event {} na temat {}", event.getId(), topic);
 
             } catch (Exception e) {
-                log.error("Failed to send event ID: {}. Will retry in next iteration.", event.getId(), e);
+                log.error("Błąd podczas wysyłania eventu {} na Kafkę. " +
+                        "Event pozostaje nieprzetworzony i zostanie ponowiony.", event.getId(), e);
             }
         }
     }

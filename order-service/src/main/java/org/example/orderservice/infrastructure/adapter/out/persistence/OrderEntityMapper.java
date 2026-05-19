@@ -28,7 +28,6 @@ public interface OrderEntityMapper {
     }
 
     default List<OrderItemJpaEntity> toOrderItemEntities(OrderLines items) {
-        if (items == null) return null;
         return items.toList().stream()
                 .map(this::toOrderItemJpaEntity)
                 .toList();
@@ -36,16 +35,10 @@ public interface OrderEntityMapper {
 
     @AfterMapping
     default void linkOrderItems(@MappingTarget OrderJpaEntity entity) {
-        if (entity.getItems() == null) {
-            return;
-        }
-
         entity.getItems().forEach(item -> item.setOrder(entity));
     }
 
     default Order toDomainModel(OrderJpaEntity entity) {
-        if (entity == null) return null;
-
         return Order.restore(new OrderState(
                 entity.getId(),
                 entity.getCustomerId(),
