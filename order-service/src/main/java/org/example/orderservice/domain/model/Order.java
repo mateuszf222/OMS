@@ -1,11 +1,15 @@
 package org.example.orderservice.domain.model;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.example.orderservice.domain.event.DomainEvent;
 import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
 import org.example.orderservice.domain.event.OrderCreatedDomainEvent;
-import org.example.orderservice.domain.exception.OrderDomainException;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import org.example.orderservice.domain.exception.CannotCancelOrderException;
+import org.example.orderservice.domain.exception.CannotConfirmPaymentException;
+import org.example.orderservice.domain.exception.CustomerRequiredForOrderException;
+import org.example.orderservice.domain.exception.OrderItemsMustUseSameCurrencyException;
+import org.example.orderservice.domain.exception.OrderMustContainProductsException;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -34,12 +38,23 @@ public class Order {
     }
 
     public static Order create(UUID customerId, List<OrderItem> items) {
-        if (customerId == null) throw new OrderDomainException("CustomerId nie może być null.");
-        if (items == null || items.isEmpty()) throw new OrderDomainException("Zamówienie musi zawierać produkty.");
+        if (customerId == null) {
+            throw new CustomerRequiredForOrderException();
+        }
+        if (items == null || items.isEmpty()) {
+            throw new OrderMustContainProductsException();
+        }
 
-        var firstCurrency = items.get(0).getUnitPrice().currency();
-        boolean mixed = items.stream().anyMatch(i -> !i.getUnitPrice().currency().equals(firstCurrency));
-        if (mixed) throw new OrderDomainException("Produkty w zamówieniu muszą być w tej samej walucie.");
+        var firstCurrency = items.getFirst().getUnitPrice().currency();
+        var itemWithDifferentCurrency = items.stream()
+                .filter(item -> !item.getUnitPrice().currency().equals(firstCurrency))
+                .findFirst();
+        if (itemWithDifferentCurrency.isPresent()) {
+            throw new OrderItemsMustUseSameCurrencyException(
+                    firstCurrency,
+                    itemWithDifferentCurrency.get().getUnitPrice().currency()
+            );
+        }
 
         Order order = new Order(UUID.randomUUID(), customerId, OrderStatus.PENDING, items, ZonedDateTime.now());
 
@@ -57,7 +72,7 @@ public class Order {
                 state.id(),
                 state.customerId(),
                 state.status(),
-                state.lines().toList(), 
+                state.lines().toList(),
                 state.createdAt()
         );
         order.version = state.version();
@@ -65,17 +80,15 @@ public class Order {
     }
 
     public void confirmPayment() {
-        if (this.status != OrderStatus.PENDING) {
-            throw new OrderDomainException("Nie można potwierdzić zamówienia w statusie: " + this.status);
+        if (!this.status.canTransitionTo(OrderStatus.CONFIRMED)) {
+            throw new CannotConfirmPaymentException(this.status);
         }
         this.status = OrderStatus.CONFIRMED;
     }
 
     public void cancel(String reason) {
-        if (this.status == OrderStatus.CANCELLED) {
-            throw new OrderDomainException(
-                    "Nie można anulować zamówienia w statusie: " + this.status
-            );
+        if (!this.status.canTransitionTo(OrderStatus.CANCELLED)) {
+            throw new CannotCancelOrderException(this.status);
         }
 
         OrderStatus previousStatus = this.status;
@@ -98,5 +111,4 @@ public class Order {
         domainEvents.clear();
         return events;
     }
-
 }

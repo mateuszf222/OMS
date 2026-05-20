@@ -1,6 +1,8 @@
 package org.example.orderservice.domain.model;
 
-import org.example.orderservice.domain.exception.OrderDomainException;
+import org.example.orderservice.domain.exception.OrderItemsMustUseSameCurrencyException;
+import org.example.orderservice.domain.exception.OrderMustContainProductsException;
+
 import java.util.List;
 
 public class OrderLines {
@@ -8,19 +10,25 @@ public class OrderLines {
 
     public OrderLines(List<OrderItem> items) {
         if (items == null || items.isEmpty()) {
-            throw new OrderDomainException("Zamówienie musi zawierać produkty.");
+            throw new OrderMustContainProductsException();
         }
-        var firstCurrency = items.get(0).getUnitPrice().currency();
-        boolean mixed = items.stream().anyMatch(i -> !i.getUnitPrice().currency().equals(firstCurrency));
 
-        if (mixed) {
-            throw new OrderDomainException("Produkty w zamówieniu muszą być w tej samej walucie.");
+        var firstCurrency = items.getFirst().getUnitPrice().currency();
+        var itemWithDifferentCurrency = items.stream()
+                .filter(item -> !item.getUnitPrice().currency().equals(firstCurrency))
+                .findFirst();
+
+        if (itemWithDifferentCurrency.isPresent()) {
+            throw new OrderItemsMustUseSameCurrencyException(
+                    firstCurrency,
+                    itemWithDifferentCurrency.get().getUnitPrice().currency()
+            );
         }
         this.items = List.copyOf(items);
     }
 
     public Money calculateTotal() {
-        var currency = items.get(0).getUnitPrice().currency();
+        var currency = items.getFirst().getUnitPrice().currency();
         return items.stream()
                 .map(OrderItem::getSubtotal)
                 .reduce(Money.zero(currency), Money::add);

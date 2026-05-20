@@ -1,8 +1,9 @@
 package org.example.orderservice.domain.model;
 
-import org.example.orderservice.domain.exception.OrderDomainException;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import org.example.orderservice.domain.exception.InvalidOrderItemQuantityException;
+import org.example.orderservice.domain.exception.MissingOrderItemDataException;
 
 import java.util.UUID;
 
@@ -16,10 +17,10 @@ public class OrderItem {
 
     public OrderItem(UUID id, UUID productId, int quantity, Money unitPrice) {
         if (id == null || productId == null || unitPrice == null) {
-            throw new OrderDomainException("ID, ProductID oraz UnitPrice nie mogą być null.");
+            throw new MissingOrderItemDataException();
         }
         if (quantity <= 0) {
-            throw new OrderDomainException("Ilość produktów musi być większa niż 0.");
+            throw new InvalidOrderItemQuantityException(quantity);
         }
         this.id = id;
         this.productId = productId;

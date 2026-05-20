@@ -1,6 +1,8 @@
 package org.example.orderservice.domain.model;
 
-import org.example.orderservice.domain.exception.OrderDomainException;
+import org.example.orderservice.domain.exception.MoneyCurrencyMismatchException;
+import org.example.orderservice.domain.exception.NegativeMoneyMultiplierException;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Currency;
@@ -18,7 +20,7 @@ public record Money(BigDecimal amount, Currency currency) implements Comparable<
     public Money multiply(BigDecimal multiplier) {
         Objects.requireNonNull(multiplier, "Mnożnik nie może być null.");
         if (multiplier.compareTo(BigDecimal.ZERO) < 0) {
-            throw new OrderDomainException("Mnożnik nie może być ujemny.");
+            throw new NegativeMoneyMultiplierException(multiplier);
         }
         return new Money(this.amount.multiply(multiplier), this.currency);
     }
@@ -50,9 +52,7 @@ public record Money(BigDecimal amount, Currency currency) implements Comparable<
     private void requireSameCurrency(Money other) {
         Objects.requireNonNull(other, "Porównywana kwota nie może być null.");
         if (!this.currency.equals(other.currency())) {
-            throw new OrderDomainException(
-                    String.format("Niezgodność walut: oczekiwano %s, otrzymano %s", this.currency, other.currency())
-            );
+            throw new MoneyCurrencyMismatchException(this.currency, other.currency());
         }
     }
 }
