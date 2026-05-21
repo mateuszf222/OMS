@@ -6,8 +6,10 @@ import org.example.orderservice.domain.event.DomainEvent;
 import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
 import org.example.orderservice.domain.event.OrderCreatedDomainEvent;
 import org.example.orderservice.domain.exception.CannotCancelOrderException;
-import org.example.orderservice.domain.exception.CannotConfirmPaymentException;
+import org.example.orderservice.domain.exception.CannotConfirmCancelledOrderException;
 import org.example.orderservice.domain.exception.CustomerRequiredForOrderException;
+import org.example.orderservice.domain.exception.InvalidOrderStateTransitionException;
+import org.example.orderservice.domain.exception.OrderAlreadyConfirmedException;
 import org.example.orderservice.domain.exception.OrderItemsMustUseSameCurrencyException;
 import org.example.orderservice.domain.exception.OrderMustContainProductsException;
 
@@ -81,7 +83,13 @@ public class Order {
 
     public void confirmPayment() {
         if (!this.status.canTransitionTo(OrderStatus.CONFIRMED)) {
-            throw new CannotConfirmPaymentException(this.status);
+            if (this.status == OrderStatus.CONFIRMED) {
+                throw new OrderAlreadyConfirmedException();
+            }
+            if (this.status == OrderStatus.CANCELLED) {
+                throw new CannotConfirmCancelledOrderException();
+            }
+            throw new InvalidOrderStateTransitionException(this.status, OrderStatus.CONFIRMED, "confirm payment");
         }
         this.status = OrderStatus.CONFIRMED;
     }
