@@ -1,9 +1,13 @@
-package org.example.orderservice.domain.model;
+package org.example.orderservice.domain.model.builder;
+
+import org.example.orderservice.domain.model.OrderLines;
+
+import org.example.orderservice.domain.model.OrderItem;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static org.example.orderservice.domain.model.OrderTestData.standardOrderItem;
+import static org.example.orderservice.domain.model.data.OrderTestData.standardOrderItem;
 
 public class OrderLinesBuilder {
 
@@ -27,3 +31,4 @@ public class OrderLinesBuilder {
         return new OrderLines(items);
     }
 }
+

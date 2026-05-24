@@ -1,4 +1,6 @@
-package org.example.orderservice.domain.model;
+package org.example.orderservice.domain.model.test;
+
+import org.example.orderservice.domain.model.OrderStatus;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -87,3 +89,4 @@ class OrderStateTransitionsTest {
         );
     }
 }
+

@@ -1,9 +1,13 @@
-package org.example.orderservice.domain.model;
+package org.example.orderservice.domain.model.builder;
+
+import org.example.orderservice.domain.model.OrderItem;
+
+import org.example.orderservice.domain.model.Order;
 
 import java.util.List;
 import java.util.UUID;
 
-import static org.example.orderservice.domain.model.OrderTestData.standardOrderItem;
+import static org.example.orderservice.domain.model.data.OrderTestData.standardOrderItem;
 
 public class OrderBuilder {
     private UUID customerId = UUID.randomUUID();
@@ -32,3 +36,4 @@ public class OrderBuilder {
         return Order.create(customerId, items);
     }
 }
+

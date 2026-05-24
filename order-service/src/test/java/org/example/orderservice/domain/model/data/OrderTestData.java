@@ -1,9 +1,17 @@
-package org.example.orderservice.domain.model;
+package org.example.orderservice.domain.model.data;
+
+import org.example.orderservice.domain.model.builder.OrderLinesBuilder;
+
+import org.example.orderservice.domain.model.builder.OrderBuilder;
+
+import org.example.orderservice.domain.model.OrderLines;
+
+import org.example.orderservice.domain.model.OrderItem;
 
 import java.util.Currency;
 
-import static org.example.orderservice.domain.model.OrderItemBuilder.anOrderItem;
-import static org.example.orderservice.domain.model.OrderLinesBuilder.orderLines;
+import static org.example.orderservice.domain.model.builder.OrderItemBuilder.anOrderItem;
+import static org.example.orderservice.domain.model.builder.OrderLinesBuilder.orderLines;
 
 public final class OrderTestData {
 
@@ -51,3 +59,4 @@ public final class OrderTestData {
                 .build();
     }
 }
+

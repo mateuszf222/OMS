@@ -1,10 +1,14 @@
-package org.example.orderservice.domain.model;
+package org.example.orderservice.domain.model.builder;
+
+import org.example.orderservice.domain.model.OrderItem;
+
+import org.example.orderservice.domain.model.Money;
 
 import java.util.Currency;
 import java.util.UUID;
 
-import static org.example.orderservice.domain.model.MoneyBuilder.money;
-import static org.example.orderservice.domain.model.OrderTestData.PLN;
+import static org.example.orderservice.domain.model.builder.MoneyBuilder.money;
+import static org.example.orderservice.domain.model.data.OrderTestData.PLN;
 
 public class OrderItemBuilder {
 
@@ -45,3 +49,4 @@ public class OrderItemBuilder {
         return new OrderItem(id, productId, quantity, unitPrice);
     }
 }
+

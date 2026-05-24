@@ -6,6 +6,7 @@ public class InvalidOrderStateTransitionException extends OrderDomainException {
 
     private final OrderStatus currentStatus;
     private final OrderStatus targetStatus;
+    private final String action;
 
     public InvalidOrderStateTransitionException(OrderStatus currentStatus, OrderStatus targetStatus, String action) {
         super(String.format(
@@ -16,6 +17,7 @@ public class InvalidOrderStateTransitionException extends OrderDomainException {
         ));
         this.currentStatus = currentStatus;
         this.targetStatus = targetStatus;
+        this.action = action;
     }
 
     public OrderStatus getCurrentStatus() {
@@ -24,5 +26,9 @@ public class InvalidOrderStateTransitionException extends OrderDomainException {
 
     public OrderStatus getTargetStatus() {
         return targetStatus;
+    }
+
+    public String getAction() {
+        return action;
     }
 }

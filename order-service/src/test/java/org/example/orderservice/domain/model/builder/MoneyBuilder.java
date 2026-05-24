@@ -1,4 +1,6 @@
-package org.example.orderservice.domain.model;
+package org.example.orderservice.domain.model.builder;
+
+import org.example.orderservice.domain.model.Money;
 
 import java.math.BigDecimal;
 import java.util.Currency;
@@ -16,3 +18,4 @@ public final class MoneyBuilder {
         return new BigDecimal(value);
     }
 }
+
