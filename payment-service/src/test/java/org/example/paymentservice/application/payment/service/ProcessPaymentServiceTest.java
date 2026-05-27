@@ -4,12 +4,12 @@ import org.example.paymentservice.application.payment.port.in.ProcessPaymentComm
 import org.example.paymentservice.application.payment.port.out.PaymentRepository;
 import org.example.paymentservice.domain.exception.PaymentDomainException;
 import org.example.paymentservice.domain.model.PaymentAssert;
+import org.example.paymentservice.domain.model.payment.MaxAmountSpecification;
 import org.example.paymentservice.domain.model.payment.Payment;
-import org.example.paymentservice.domain.specification.Specification;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -19,7 +19,6 @@ import static org.example.paymentservice.application.payment.service.PaymentComm
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ProcessPaymentServiceTest {
@@ -27,16 +26,16 @@ class ProcessPaymentServiceTest {
     @Mock
     private PaymentRepository paymentRepository;
 
-    @Mock
-    private Specification<Payment> maxAmountSpecification;
-
-    @InjectMocks
     private ProcessPaymentService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new ProcessPaymentService(paymentRepository, new MaxAmountSpecification());
+    }
 
     @Test
     void shouldInitializePendingPaymentAndSaveItWhenLimitSpecificationPasses() {
         ProcessPaymentCommand command = processPaymentWithinPlnLimit();
-        when(maxAmountSpecification.isSatisfiedBy(any(Payment.class))).thenReturn(true);
 
         service.processPayment(command);
 
@@ -51,12 +50,9 @@ class ProcessPaymentServiceTest {
 
     @Test
     void shouldRejectPaymentAndNotSaveWhenLimitSpecificationFails() {
-        when(maxAmountSpecification.isSatisfiedBy(any(Payment.class))).thenReturn(false);
-        when(maxAmountSpecification.getReasonNotSatisfied()).thenReturn("limit exceeded");
-
         assertThatExceptionOfType(PaymentDomainException.class)
                 .isThrownBy(() -> service.processPayment(processPaymentAbovePlnLimit()))
-                .withMessageContaining("limit exceeded");
+                .withMessageContaining("maksymalny dopuszczalny limit");
 
         verify(paymentRepository, never()).save(any(Payment.class));
     }

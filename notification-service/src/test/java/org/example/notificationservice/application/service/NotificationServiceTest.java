@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.example.notificationservice.NotificationTestData.PAYMENT_FAILURE_REASON;
+import static org.example.notificationservice.NotificationTestData.PAYMENT_SUCCESS_MESSAGE_FRAGMENT;
 import static org.example.notificationservice.NotificationTestData.notificationIds;
 import static org.mockito.Mockito.verify;
 
@@ -48,7 +49,7 @@ class NotificationServiceTest {
                 .isAddressedTo(ids.syntheticCustomerEmail())
                 .hasSubjectContaining(ids.orderId().toString())
                 .hasTextContaining(ids.orderId().toString())
-                .hasTextContaining("sukcesem");
+                .hasTextContaining(PAYMENT_SUCCESS_MESSAGE_FRAGMENT);
     }
 
     @Test

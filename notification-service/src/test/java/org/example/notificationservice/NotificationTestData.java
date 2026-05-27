@@ -15,6 +15,7 @@ import static org.example.notificationservice.domain.EmailMessageBuilder.anEmail
 public final class NotificationTestData {
 
     public static final String CUSTOMER_EMAIL = "customer@dummy-domain.com";
+    public static final String PAYMENT_SUCCESS_MESSAGE_FRAGMENT = "sukcesem";
     public static final String PAYMENT_FAILURE_REASON = "LIMIT_EXCEEDED";
     public static final String REJECTED_BY_BANK = "REJECTED_BY_BANK";
 

@@ -87,12 +87,13 @@ class OrderCommandServiceTest {
         void shouldConfirmExistingPendingOrder() {
             Order order = OrderBuilder.anOrder().build();
             when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-            when(orderRepository.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
 
             service.completePayment(paymentCompletedFor(order.getId()));
 
-            OrderAssert.assertThat(order).isConfirmed();
-            verify(orderRepository).save(order);
+            ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
+            verify(orderRepository).save(captor.capture());
+
+            OrderAssert.assertThat(captor.getValue()).isConfirmed();
         }
 
         @Test
@@ -117,18 +118,18 @@ class OrderCommandServiceTest {
             order.pullDomainEvents();
 
             when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-            when(orderRepository.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
 
             CancelOrderCommand command = paymentRejectedByBankFor(order.getId());
 
             service.cancelOrder(command);
 
-            OrderAssert.assertThat(order)
+            ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
+            verify(orderRepository).save(captor.capture());
+
+            OrderAssert.assertThat(captor.getValue())
                     .isCancelled()
                     .emittedEvent(OrderCancelledDomainEvent.class)
                     .emittedCancellationBecause(REJECTED_BY_BANK);
-
-            verify(orderRepository).save(order);
         }
     }
 }
