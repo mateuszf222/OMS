@@ -23,15 +23,18 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.example.orderservice.OrderApiTestData.EXPECTED_SINGLE_ITEM_TOTAL;
+import static org.example.orderservice.OrderApiTestData.PLN;
+import static org.example.orderservice.OrderApiTestData.consumerGroupId;
+import static org.example.orderservice.OrderApiTestData.createOrderRequestWithSinglePlnItem;
+import static org.example.orderservice.OrderApiTestData.customerId;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -76,18 +79,8 @@ class OrderIntegrationTest {
     @Test
     void shouldCreateOrderSaveToDbAndPublishKafkaEvent() throws Exception
     {
-        UUID customerId = UUID.randomUUID();
-
-        CreateOrderRequest request = new CreateOrderRequest(
-                List.of(
-                        new CreateOrderRequest.OrderItemRequest(
-                                UUID.randomUUID(),
-                                2,
-                                new BigDecimal("150.00"),
-                                "PLN"
-                        )
-                )
-        );
+        UUID customerId = customerId();
+        CreateOrderRequest request = createOrderRequestWithSinglePlnItem();
 
         mockMvc.perform(post("/api/v1/orders")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -102,7 +95,7 @@ class OrderIntegrationTest {
 
         Map<String, Object> consumerProps = new HashMap<>();
         consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-        consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, "manual-test-group-" + UUID.randomUUID());
+        consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId());
         consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -116,8 +109,9 @@ class OrderIntegrationTest {
             var message = records.iterator().next();
 
             assertThat(message.value()).contains(customerId.toString());
-            assertThat(message.value()).contains("300.00");
-            assertThat(message.value()).contains("PLN");
+            assertThat(message.value()).contains(EXPECTED_SINGLE_ITEM_TOTAL);
+            assertThat(message.value()).contains(PLN);
         }
     }
 }
+

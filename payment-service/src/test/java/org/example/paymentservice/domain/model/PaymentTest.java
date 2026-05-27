@@ -1,76 +1,86 @@
 package org.example.paymentservice.domain.model;
 
 import org.example.paymentservice.domain.exception.PaymentDomainException;
+import org.example.paymentservice.domain.model.PaymentTestData.PaymentIds;
+import org.example.paymentservice.domain.model.payment.MaxAmountSpecification;
 import org.example.paymentservice.domain.model.payment.Payment;
 import org.example.paymentservice.domain.model.payment.PaymentStatus;
-import org.example.paymentservice.domain.model.payment.MaxAmountSpecification;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.math.BigDecimal;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.example.paymentservice.domain.model.PaymentTestData.amountWithinPlnLimit;
+import static org.example.paymentservice.domain.model.PaymentTestData.paymentIds;
+import static org.example.paymentservice.domain.model.PaymentTestData.restoredPayment;
+import static org.example.paymentservice.domain.model.PaymentTestData.standardPaymentAmount;
 
 class PaymentTest {
 
-    private final UUID orderId = UUID.randomUUID();
-    private final UUID customerId = UUID.randomUUID();
+    private final PaymentIds ids = paymentIds();
 
     @Test
-    void shouldInitializePaymentSuccessfully() {
-        Money money = Money.of(new BigDecimal("100.50"), "PLN");
+    void shouldInitializePendingPayment() {
+        Money amount = standardPaymentAmount();
 
-        Payment payment = Payment.initialize(orderId, customerId, money);
+        Payment payment = Payment.initialize(ids.orderId(), ids.customerId(), amount);
 
-        assertThat(payment.getOrderId()).isEqualTo(orderId);
-        assertThat(payment.getAmount().amount()).isEqualByComparingTo("100.50");
-        assertThat(payment.getAmount().currency()).isEqualTo("PLN");
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PENDING);
-        assertThat(payment.getId()).isNotNull();
+        PaymentAssert.assertThat(payment)
+                .hasGeneratedId()
+                .hasOrderId(ids.orderId())
+                .belongsToCustomer(ids.customerId())
+                .hasAmount(amount)
+                .isPending();
     }
 
     @Test
-    void shouldCompletePayment() {
-        Payment payment = Payment.initialize(orderId, customerId,Money.of(new BigDecimal("100.00"), "PLN"));
+    void shouldCompletePendingPayment() {
+        Payment payment = Payment.initialize(ids.orderId(), ids.customerId(), standardPaymentAmount());
 
         payment.complete();
 
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.COMPLETED);
+        PaymentAssert.assertThat(payment).isCompleted();
     }
 
     @Test
-    void shouldFailPayment() {
-        Payment payment = Payment.initialize(orderId, customerId,Money.of(new BigDecimal("100.00"), "PLN"));
+    void shouldFailPendingPayment() {
+        Payment payment = Payment.initialize(ids.orderId(), ids.customerId(), standardPaymentAmount());
 
         payment.fail();
 
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
+        PaymentAssert.assertThat(payment).isFailed();
     }
 
-    @Test
-    void shouldThrowExceptionWhenCompletingAlreadyCompletedPayment() {
-        Payment payment = Payment.initialize(orderId, customerId,Money.of(new BigDecimal("100.00"), "PLN"));
-        payment.complete();
+    @ParameterizedTest
+    @EnumSource(value = PaymentStatus.class, names = {"COMPLETED", "FAILED"})
+    void shouldRejectCompletingTerminalPayment(PaymentStatus terminalStatus) {
+        Payment payment = restoredPayment(terminalStatus);
 
-        assertThatThrownBy(payment::complete)
-                .isInstanceOf(PaymentDomainException.class)
-                .hasMessageContaining("Cannot complete payment in status");
+        assertThatExceptionOfType(PaymentDomainException.class)
+                .isThrownBy(payment::complete)
+                .withMessageContaining("Cannot complete payment in status: " + terminalStatus);
+
+        PaymentAssert.assertThat(payment).hasStatus(terminalStatus);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PaymentStatus.class, names = {"COMPLETED", "FAILED"})
+    void shouldRejectFailingTerminalPayment(PaymentStatus terminalStatus) {
+        Payment payment = restoredPayment(terminalStatus);
+
+        assertThatExceptionOfType(PaymentDomainException.class)
+                .isThrownBy(payment::fail)
+                .withMessageContaining("Cannot fail payment in status: " + terminalStatus);
+
+        PaymentAssert.assertThat(payment).hasStatus(terminalStatus);
     }
 
     @Test
     void shouldPassLimitValidationForValidAmount() {
-        Payment payment = Payment.initialize(orderId, customerId,Money.of(new BigDecimal("9999.99"), "PLN"));
+        Payment payment = Payment.initialize(ids.orderId(), ids.customerId(), amountWithinPlnLimit());
 
         payment.checkSpecification(new MaxAmountSpecification());
-    }
 
-//    @Test
-//    void shouldThrowExceptionWhenAmountExceedsMaximumLimit() {
-//        Payment payment = Payment.initialize(orderId, customerId,Money.of(new BigDecimal("10000.01"), "PLN"));
-//
-//        assertThatThrownBy(payment::checkSpecification)
-//                .isInstanceOf(PaymentDomainException.class)
-//                .hasMessageContaining("Amount exceeds maximum limit");
-//    }
+        PaymentAssert.assertThat(payment).isPending();
+    }
 }
