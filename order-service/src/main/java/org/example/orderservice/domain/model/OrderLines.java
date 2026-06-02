@@ -27,7 +27,7 @@ public class OrderLines {
         this.items = List.copyOf(items);
     }
 
-    public Money calculateTotal() {
+    public Money totalAmount() {
         var currency = items.getFirst().getUnitPrice().currency();
         return items.stream()
                 .map(OrderItem::getSubtotal)

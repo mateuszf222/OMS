@@ -1,53 +1,76 @@
 package org.example.orderservice.infrastructure.adapter.out.messaging;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.example.orderservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaEntity;
 import org.example.orderservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaRepository;
 import org.example.orderservice.infrastructure.config.KafkaTopicsProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OutboxMessageRelay {
 
-    private static final Logger log = LoggerFactory.getLogger("OutboxMessageRelay.java");
+    private static final String OUTBOX_EVENT_ID_HEADER = "outbox-event-id";
+    private static final String OUTBOX_EVENT_TYPE_HEADER = "outbox-event-type";
+
     private final OutboxEventJpaRepository outboxRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final KafkaTopicsProperties topics;
 
-
     @Scheduled(fixedDelay = 2000)
     @Transactional
-    public void processOutboxEvents() {
-        List<OutboxEventJpaEntity> unprocessedEvents = outboxRepository.findTop50UnprocessedEvents();
+    public void publishPendingOutboxMessages() {
+        List<OutboxEventJpaEntity> pendingOutboxMessages = outboxRepository.findTop50PendingMessages();
 
-        if (unprocessedEvents.isEmpty()) {
+        if (pendingOutboxMessages.isEmpty()) {
             return;
         }
 
-        log.info("Znaleziono {} nieprzetworzonych zdarzeń w Outbox.", unprocessedEvents.size());
+        log.info("Found {} pending Order outbox messages.", pendingOutboxMessages.size());
 
-        for (OutboxEventJpaEntity event : unprocessedEvents) {
+        for (OutboxEventJpaEntity event : pendingOutboxMessages) {
             try {
-                log.info("Outbox Relay - Wysyłanie na Kafkę. ID: {}, Payload: {}", event.getId(), event.getPayload());
-                kafkaTemplate.send(topics.getOrderEvents(), event.getAggregateId(), event.getPayload())
-                        .get();
+                publishOutboxMessage(topics.getOrderEvents(), event);
 
                 event.setProcessed(true);
                 outboxRepository.save(event);
-                log.debug("Pomyślnie wysłano zdarzenie o ID: {}", event.getId());
 
+                log.debug("Published Order outbox event {}.", event.getId());
             } catch (Exception e) {
-                log.error("Błąd podczas wysyłania zdarzenia z Outboxa o ID: {}", event.getId(), e);
-                throw new RuntimeException("Przerwano Relay z powodu awarii Kafki.", e);
+                log.error(
+                        "Failed to publish Order outbox event {}. Event remains pending and will be retried.",
+                        event.getId(),
+                        e
+                );
             }
+        }
+    }
+
+    private void publishOutboxMessage(String topic, OutboxEventJpaEntity event) {
+        ProducerRecord<String, String> record = new ProducerRecord<>(
+                topic,
+                event.getAggregateId(),
+                event.getPayload()
+        );
+        record.headers().add(OUTBOX_EVENT_ID_HEADER, event.getId().toString().getBytes(StandardCharsets.UTF_8));
+        record.headers().add(OUTBOX_EVENT_TYPE_HEADER, event.getEventType().getBytes(StandardCharsets.UTF_8));
+
+        try {
+            kafkaTemplate.send(record).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while publishing outbox event.", e);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to publish outbox event.", e);
         }
     }
 }

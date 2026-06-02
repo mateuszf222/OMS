@@ -6,4 +6,10 @@ public record PaymentCompletedEvent(
         UUID orderId,
         UUID paymentId,
         UUID customerId
-) {}
+) implements NotificationEvent {
+
+    @Override
+    public String notificationMessageId() {
+        return paymentId.toString();
+    }
+}

@@ -65,7 +65,15 @@ public class Payment {
         this.status = PaymentStatus.FAILED;
     }
 
-    public void checkSpecification(Specification<Payment> specification) {
+    public boolean isSettled() {
+        return status == PaymentStatus.COMPLETED || status == PaymentStatus.FAILED;
+    }
+
+    public boolean isAwaitingGatewayDecision() {
+        return status == PaymentStatus.PENDING;
+    }
+
+    public void ensureAllowedBy(Specification<Payment> specification) {
         if (!specification.isSatisfiedBy(this)) {
             throw new PaymentDomainException(specification.getReasonNotSatisfied());
         }

@@ -14,5 +14,5 @@ public interface OutboxEventJpaRepository extends JpaRepository<OutboxEventJpaEn
     // dzięki czemu inne instancje serwisu ich nie pobiorą dopóki transakcja trwa.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM OutboxEventJpaEntity e WHERE e.processed = false ORDER BY e.createdAt ASC LIMIT 50")
-    List<OutboxEventJpaEntity> findTop50UnprocessedEvents();
+    List<OutboxEventJpaEntity> findTop50PendingMessages();
 }

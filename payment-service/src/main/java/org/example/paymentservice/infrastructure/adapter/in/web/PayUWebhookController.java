@@ -4,13 +4,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.paymentservice.application.payment.port.in.ApplyGatewayPaymentStatusUseCase;
 import org.example.paymentservice.application.payment.port.in.GatewayPaymentStatus;
-import org.example.paymentservice.application.payment.service.PaymentWebhookService;
 import org.example.paymentservice.infrastructure.config.payu.PayUProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.DigestUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
@@ -20,40 +24,37 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PayUWebhookController {
 
-    private final PaymentWebhookService paymentWebhookService;
+    private final ApplyGatewayPaymentStatusUseCase applyGatewayPaymentStatusUseCase;
     private final PayUProperties payUProperties;
     private final ObjectMapper objectMapper;
 
     @PostMapping("/webhook")
-    public ResponseEntity<Void> handleWebhook(
+    public ResponseEntity<Void> onPayUWebhook(
             @RequestHeader("OpenPayu-Signature") String signatureHeader,
             @RequestBody String rawBody) {
 
-        log.info("Odebrano webhook z PayU!");
+        log.info("Received PayU webhook.");
 
         if (!isSignatureValid(signatureHeader, rawBody)) {
-            log.warn("Niewłaściwa sygnatura PayU!");
+            log.warn("Invalid PayU signature.");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         try {
             PayUNotification notification = objectMapper.readValue(rawBody, PayUNotification.class);
             UUID paymentId = UUID.fromString(notification.order().extOrderId());
+            PayUStatus payUStatus = PayUStatus.fromString(notification.order().status());
+            GatewayPaymentStatus gatewayStatus = gatewayStatusFrom(payUStatus);
 
-            PayUStatus externalStatus = PayUStatus.fromString(notification.order().status());
-
-            GatewayPaymentStatus gatewayStatus = mapToGatewayStatus(externalStatus);
-
-            paymentWebhookService.handleWebhook(paymentId, gatewayStatus);
+            applyGatewayPaymentStatusUseCase.applyGatewayPaymentStatus(paymentId, gatewayStatus);
             return ResponseEntity.ok().build();
-
-        } catch (Exception e) {
-            log.error("Błąd podczas przetwarzania webhooka PayU", e);
+        } catch (Exception exception) {
+            log.error("PayU webhook could not be applied.", exception);
             return ResponseEntity.internalServerError().build();
         }
     }
 
-    private GatewayPaymentStatus mapToGatewayStatus(PayUStatus payUStatus) {
+    private GatewayPaymentStatus gatewayStatusFrom(PayUStatus payUStatus) {
         return switch (payUStatus) {
             case COMPLETED -> GatewayPaymentStatus.SUCCESS;
             case CANCELED, REJECTED -> GatewayPaymentStatus.FAILURE;
@@ -75,15 +76,16 @@ public class PayUWebhookController {
             break;
         }
 
-        String concatenated = rawBody + payUProperties.getSecondKey();
-        String calculatedSignature = DigestUtils.md5DigestAsHex(concatenated.getBytes());
+        String signaturePayload = rawBody + payUProperties.getSecondKey();
+        String actualSignature = DigestUtils.md5DigestAsHex(signaturePayload.getBytes());
 
-        return calculatedSignature.equals(expectedSignature);
+        return actualSignature.equals(expectedSignature);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record PayUNotification(Order order) {
         @JsonIgnoreProperties(ignoreUnknown = true)
-        record Order(String extOrderId, String status) {}
+        record Order(String extOrderId, String status) {
+        }
     }
 }

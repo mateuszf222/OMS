@@ -35,7 +35,7 @@ public class OrderController {
             @AuthenticationPrincipal Jwt jwt) {
 
         UUID customerId = UUID.fromString(jwt.getSubject());
-        CreateOrderCommand command = orderRequestMapper.toCommand(customerId, request);
+        CreateOrderCommand command = orderRequestMapper.toCreateOrderCommand(customerId, request);
 
         UUID orderId = createOrderUseCase.createOrder(command);
 
@@ -55,7 +55,7 @@ public class OrderController {
             @PathVariable("id") UUID orderId,
             @Valid @RequestBody CancelOrderRequest request) {
 
-        CancelOrderCommand command = orderRequestMapper.toCancelCommand(orderId, request);
+        CancelOrderCommand command = orderRequestMapper.toCancelOrderCommand(orderId, request);
 
         cancelOrderUseCase.cancelOrder(command);
 

@@ -26,16 +26,16 @@ import static org.example.orderservice.domain.model.OrderStatus.CONFIRMED;
 @DisplayName("Order Aggregate")
 class OrderTest {
 
-    private static final String CONFIRM_PAYMENT_ACTION = "confirm payment";
+    private static final String APPLY_SUCCESSFUL_PAYMENT_ACTION = "apply successful payment";
     private static final String CANCEL_ACTION = "cancel order";
 
     @Test
     @DisplayName("powinien potwierdzić płatność dla nowo utworzonego zamówienia")
-    void shouldConfirmPaymentForNewOrder() {
+    void shouldConfirmOrderAfterSuccessfulPayment() {
         Order order = OrderBuilder.anOrder().build();
         order.pullDomainEvents();
 
-        order.confirmPayment();
+        order.applySuccessfulPayment();
 
         OrderAssert.assertThat(order).isConfirmed();
     }
@@ -49,23 +49,23 @@ class OrderTest {
     }
 
     @Nested
-    @DisplayName("when confirming payment")
-    class ConfirmPayment {
+    @DisplayName("when applying successful payment")
+    class ApplySuccessfulPayment {
 
         @Test
         @DisplayName("should throw exception when order is already confirmed")
         void shouldThrowWhenAlreadyConfirmed() {
             Order order = OrderBuilder.anOrder().build();
             order.pullDomainEvents();
-            order.confirmPayment();
+            order.applySuccessfulPayment();
 
             assertThatExceptionOfType(InvalidOrderStateTransitionException.class)
-                    .isThrownBy(order::confirmPayment)
+                    .isThrownBy(order::applySuccessfulPayment)
                     .satisfies(ex -> OrderExceptionAssert.assertThat(ex)
                             .hasCurrentStatus(CONFIRMED)
                             .hasTargetStatus(CONFIRMED)
-                            .hasAction(CONFIRM_PAYMENT_ACTION)
-                            .hasMessageContaining(CONFIRM_PAYMENT_ACTION, "CONFIRMED")
+                            .hasAction(APPLY_SUCCESSFUL_PAYMENT_ACTION)
+                            .hasMessageContaining(APPLY_SUCCESSFUL_PAYMENT_ACTION, "CONFIRMED")
                     );
 
             OrderAssert.assertThat(order).isConfirmed();
@@ -75,15 +75,15 @@ class OrderTest {
         @DisplayName("should throw exception when order is cancelled")
         void shouldThrowWhenOrderIsCancelled() {
             Order order = OrderBuilder.anOrder().build();
-            order.cancel("Brak wpłaty");
+            order.cancelWithReason("Brak wpłaty");
 
             assertThatExceptionOfType(InvalidOrderStateTransitionException.class)
-                    .isThrownBy(order::confirmPayment)
+                    .isThrownBy(order::applySuccessfulPayment)
                     .satisfies(ex -> OrderExceptionAssert.assertThat(ex)
                             .hasCurrentStatus(CANCELLED)
                             .hasTargetStatus(CONFIRMED)
-                            .hasAction(CONFIRM_PAYMENT_ACTION)
-                            .hasMessageContaining(CONFIRM_PAYMENT_ACTION, "CANCELLED", "CONFIRMED")
+                            .hasAction(APPLY_SUCCESSFUL_PAYMENT_ACTION)
+                            .hasMessageContaining(APPLY_SUCCESSFUL_PAYMENT_ACTION, "CANCELLED", "CONFIRMED")
                     );
 
             OrderAssert.assertThat(order).isCancelled();
@@ -100,7 +100,7 @@ class OrderTest {
             Order order = OrderBuilder.anOrder().build();
             order.pullDomainEvents();
 
-            order.cancel("Brak wpłaty w terminie 15 minut");
+            order.cancelWithReason("Brak wpłaty w terminie 15 minut");
 
             OrderAssert.assertThat(order)
                     .isCancelled()
@@ -112,9 +112,9 @@ class OrderTest {
         void shouldAllowCancellingConfirmedOrder() {
             Order order = OrderBuilder.anOrder().build();
             order.pullDomainEvents();
-            order.confirmPayment();
+            order.applySuccessfulPayment();
 
-            order.cancel("Rezygnacja klienta");
+            order.cancelWithReason("Rezygnacja klienta");
 
             OrderAssert.assertThat(order)
                     .isCancelled()
@@ -125,10 +125,10 @@ class OrderTest {
         @DisplayName("should throw exception when order is already cancelled")
         void shouldThrowWhenAlreadyCancelled() {
             Order order = OrderBuilder.anOrder().build();
-            order.cancel("Powód 1");
+            order.cancelWithReason("Powód 1");
 
             assertThatExceptionOfType(InvalidOrderStateTransitionException.class)
-                    .isThrownBy(() -> order.cancel("Powód 2"))
+                    .isThrownBy(() -> order.cancelWithReason("Powód 2"))
                     .satisfies(ex -> OrderExceptionAssert.assertThat(ex)
                             .hasCurrentStatus(CANCELLED)
                             .hasTargetStatus(CANCELLED)

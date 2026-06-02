@@ -15,8 +15,8 @@ import java.util.List;
 public interface OrderEntityMapper {
 
     @Mapping(target = "status", source = "status")
-    @Mapping(target = "totalAmount", source = "totalAmount.amount")
-    @Mapping(target = "currency", source = "totalAmount.currency.currencyCode")
+    @Mapping(target = "totalAmount", expression = "java(order.totalAmount().amount())")
+    @Mapping(target = "currency", expression = "java(order.totalAmount().currency().getCurrencyCode())")
     OrderJpaEntity toJpaEntity(Order order);
 
     @Mapping(target = "unitPrice", source = "unitPrice.amount")

@@ -84,7 +84,7 @@ class OrderCommandServiceTest {
     class CompletePayment {
 
         @Test
-        void shouldConfirmExistingPendingOrder() {
+        void shouldMarkExistingPendingOrderAsPaid() {
             Order order = OrderBuilder.anOrder().build();
             when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
 

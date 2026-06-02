@@ -7,8 +7,6 @@ import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
 import org.example.orderservice.domain.event.OrderCreatedDomainEvent;
 import org.example.orderservice.domain.exception.CustomerRequiredForOrderException;
 import org.example.orderservice.domain.exception.InvalidOrderStateTransitionException;
-import org.example.orderservice.domain.exception.OrderItemsMustUseSameCurrencyException;
-import org.example.orderservice.domain.exception.OrderMustContainProductsException;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -19,6 +17,12 @@ import java.util.UUID;
 @EqualsAndHashCode(of = "id")
 public class Order {
 
+    private static final OrderStatus INITIAL_STATUS = OrderStatus.PENDING;
+    private static final OrderStatus PAID_STATUS = OrderStatus.CONFIRMED;
+    private static final OrderStatus CANCELLED_STATUS = OrderStatus.CANCELLED;
+    private static final String APPLY_SUCCESSFUL_PAYMENT_ACTION = "apply successful payment";
+    private static final String CANCEL_ORDER_ACTION = "cancel order";
+
     private final UUID id;
     private final UUID customerId;
     private OrderStatus status;
@@ -28,40 +32,25 @@ public class Order {
     private final OrderLines items;
     private final List<DomainEvent> domainEvents = new ArrayList<>();
 
-    private Order(UUID id, UUID customerId, OrderStatus status, List<OrderItem> items, ZonedDateTime createdAt) {
+    private Order(UUID id, UUID customerId, OrderStatus status, OrderLines items, ZonedDateTime createdAt) {
         this.id = id;
         this.customerId = customerId;
         this.status = status;
-        this.items = new OrderLines(items);
+        this.items = items;
         this.createdAt = createdAt;
     }
 
     public static Order create(UUID customerId, List<OrderItem> items) {
-        if (customerId == null) {
-            throw new CustomerRequiredForOrderException();
-        }
-        if (items == null || items.isEmpty()) {
-            throw new OrderMustContainProductsException();
-        }
+        requireCustomer(customerId);
 
-        var firstCurrency = items.getFirst().getUnitPrice().currency();
-        var itemWithDifferentCurrency = items.stream()
-                .filter(item -> !item.getUnitPrice().currency().equals(firstCurrency))
-                .findFirst();
-        if (itemWithDifferentCurrency.isPresent()) {
-            throw new OrderItemsMustUseSameCurrencyException(
-                    firstCurrency,
-                    itemWithDifferentCurrency.get().getUnitPrice().currency()
-            );
-        }
-
-        Order order = new Order(UUID.randomUUID(), customerId, OrderStatus.PENDING, items, ZonedDateTime.now());
-
-        order.domainEvents.add(new OrderCreatedDomainEvent(
-                order.getId(),
-                order.getCustomerId(),
-                order.getTotalAmount()
-        ));
+        Order order = new Order(
+                UUID.randomUUID(),
+                customerId,
+                INITIAL_STATUS,
+                new OrderLines(items),
+                ZonedDateTime.now()
+        );
+        order.recordOrderCreated();
 
         return order;
     }
@@ -71,43 +60,65 @@ public class Order {
                 state.id(),
                 state.customerId(),
                 state.status(),
-                state.lines().toList(),
+                state.lines(),
                 state.createdAt()
         );
         order.version = state.version();
         return order;
     }
 
-    public void confirmPayment() {
-        if (!this.status.canTransitionTo(OrderStatus.CONFIRMED)) {
-            throw new InvalidOrderStateTransitionException(this.status, OrderStatus.CONFIRMED, "confirm payment");
-        }
-        this.status = OrderStatus.CONFIRMED;
+    public void applySuccessfulPayment() {
+        transitionTo(PAID_STATUS, APPLY_SUCCESSFUL_PAYMENT_ACTION);
     }
 
-    public void cancel(String reason) {
-        if (!this.status.canTransitionTo(OrderStatus.CANCELLED)) {
-            throw new InvalidOrderStateTransitionException(this.status, OrderStatus.CANCELLED, "cancel order");
-        }
+    public void cancelWithReason(String reason) {
+        OrderStatus statusBeforeCancellation = this.status;
 
-        OrderStatus previousStatus = this.status;
-        this.status = OrderStatus.CANCELLED;
-
-        domainEvents.add(new OrderCancelledDomainEvent(
-                this.id,
-                this.customerId,
-                reason,
-                previousStatus
-        ));
+        transitionTo(CANCELLED_STATUS, CANCEL_ORDER_ACTION);
+        recordOrderCancelled(reason, statusBeforeCancellation);
     }
 
-    public Money getTotalAmount() {
-        return items.calculateTotal();
+    public Money totalAmount() {
+        return items.totalAmount();
     }
 
     public List<DomainEvent> pullDomainEvents() {
         List<DomainEvent> events = new ArrayList<>(domainEvents);
         domainEvents.clear();
         return events;
+    }
+
+    private static void requireCustomer(UUID customerId) {
+        if (customerId == null) {
+            throw new CustomerRequiredForOrderException();
+        }
+    }
+
+    private void transitionTo(OrderStatus targetStatus, String action) {
+        if (!this.status.canTransitionTo(targetStatus)) {
+            throw new InvalidOrderStateTransitionException(this.status, targetStatus, action);
+        }
+        this.status = targetStatus;
+    }
+
+    private void recordOrderCreated() {
+        record(new OrderCreatedDomainEvent(
+                id,
+                customerId,
+                totalAmount()
+        ));
+    }
+
+    private void recordOrderCancelled(String reason, OrderStatus statusBeforeCancellation) {
+        record(new OrderCancelledDomainEvent(
+                id,
+                customerId,
+                reason,
+                statusBeforeCancellation
+        ));
+    }
+
+    private void record(DomainEvent domainEvent) {
+        domainEvents.add(domainEvent);
     }
 }

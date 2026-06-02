@@ -13,11 +13,11 @@ public interface OrderRequestMapper {
 
     @Mapping(target = "customerId", source = "customerId")
     @Mapping(target = "items", source = "request.items")
-    CreateOrderCommand toCommand(UUID customerId, CreateOrderRequest request);
+    CreateOrderCommand toCreateOrderCommand(UUID customerId, CreateOrderRequest request);
 
     CreateOrderCommand.OrderItemCommand toOrderItemCommand(CreateOrderRequest.OrderItemRequest request);
 
     @Mapping(target = "orderId", source = "orderId")
     @Mapping(target = "reason", source = "request.reason")
-    CancelOrderCommand toCancelCommand(UUID orderId, CancelOrderRequest request);
+    CancelOrderCommand toCancelOrderCommand(UUID orderId, CancelOrderRequest request);
 }

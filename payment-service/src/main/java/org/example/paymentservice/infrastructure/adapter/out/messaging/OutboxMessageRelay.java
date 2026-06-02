@@ -2,6 +2,7 @@ package org.example.paymentservice.infrastructure.adapter.out.messaging;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.example.paymentservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaEntity;
 import org.example.paymentservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaRepository;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -9,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -17,8 +19,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OutboxMessageRelay {
 
-    private final OutboxEventJpaRepository outboxRepository;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private static final String OUTBOX_EVENT_ID_HEADER = "outbox-event-id";
+    private static final String OUTBOX_EVENT_TYPE_HEADER = "outbox-event-type";
 
     private static final Map<String, String> EVENT_TOPIC_MAP = Map.of(
             "PaymentInitiatedEvent", "payment-initiated-events",
@@ -26,32 +28,59 @@ public class OutboxMessageRelay {
             "PaymentFailedEvent", "payment-failed-events"
     );
 
+    private final OutboxEventJpaRepository outboxRepository;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+
     @Scheduled(fixedDelay = 5000)
     @Transactional
-    public void processOutboxEvents() {
-        List<OutboxEventJpaEntity> unprocessedEvents = outboxRepository.findTop50UnprocessedEvents();
+    public void publishPendingOutboxMessages() {
+        List<OutboxEventJpaEntity> pendingOutboxMessages = outboxRepository.findTop50PendingMessages();
 
-        for (OutboxEventJpaEntity event : unprocessedEvents) {
+        for (OutboxEventJpaEntity event : pendingOutboxMessages) {
             String topic = EVENT_TOPIC_MAP.get(event.getEventType());
 
             if (topic == null || topic.isBlank()) {
-                log.error("CRITICAL: Brak skonfigurowanego tematu Kafka dla eventu typu: {}. " +
-                        "Event ID: {} pozostaje nieprzetworzony!", event.getEventType(), event.getId());
+                log.error(
+                        "Missing Kafka topic for event type {}. Outbox event {} remains pending.",
+                        event.getEventType(),
+                        event.getId()
+                );
                 continue;
             }
 
             try {
-                kafkaTemplate.send(topic, event.getAggregateId(), event.getPayload()).get(); // .get() wymusza synchroniczne potwierdzenie (blokuje do momentu sukcesu)
+                publishOutboxMessage(topic, event);
 
                 event.setProcessed(true);
                 outboxRepository.save(event);
 
-                log.debug("Pomyślnie wysłano event {} na temat {}", event.getId(), topic);
-
+                log.debug("Published Payment outbox event {} to topic {}.", event.getId(), topic);
             } catch (Exception e) {
-                log.error("Błąd podczas wysyłania eventu {} na Kafkę. " +
-                        "Event pozostaje nieprzetworzony i zostanie ponowiony.", event.getId(), e);
+                log.error(
+                        "Failed to publish Payment outbox event {}. Event remains pending and will be retried.",
+                        event.getId(),
+                        e
+                );
             }
+        }
+    }
+
+    private void publishOutboxMessage(String topic, OutboxEventJpaEntity event) {
+        ProducerRecord<String, String> record = new ProducerRecord<>(
+                topic,
+                event.getAggregateId(),
+                event.getPayload()
+        );
+        record.headers().add(OUTBOX_EVENT_ID_HEADER, event.getId().toString().getBytes(StandardCharsets.UTF_8));
+        record.headers().add(OUTBOX_EVENT_TYPE_HEADER, event.getEventType().getBytes(StandardCharsets.UTF_8));
+
+        try {
+            kafkaTemplate.send(record).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while publishing outbox event.", e);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to publish outbox event.", e);
         }
     }
 }

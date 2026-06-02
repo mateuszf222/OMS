@@ -26,13 +26,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PaymentWebhookServiceTest {
+class ApplyGatewayPaymentStatusServiceTest {
 
     @Mock
     private PaymentRepository paymentRepository;
 
     @InjectMocks
-    private PaymentWebhookService service;
+    private ApplyGatewayPaymentStatusService service;
 
     @ParameterizedTest(name = "{0} should move payment to {1}")
     @MethodSource("terminalGatewayStatuses")
@@ -40,7 +40,7 @@ class PaymentWebhookServiceTest {
         Payment payment = pendingPayment();
         when(paymentRepository.findById(payment.getId())).thenReturn(Optional.of(payment));
 
-        service.handleWebhook(payment.getId(), gatewayStatus);
+        service.applyGatewayPaymentStatus(payment.getId(), gatewayStatus);
 
         PaymentAssert.assertThat(payment).hasStatus(expectedStatus);
         verify(paymentRepository).save(payment);
@@ -52,7 +52,7 @@ class PaymentWebhookServiceTest {
         Payment payment = pendingPayment();
         when(paymentRepository.findById(payment.getId())).thenReturn(Optional.of(payment));
 
-        service.handleWebhook(payment.getId(), gatewayStatus);
+        service.applyGatewayPaymentStatus(payment.getId(), gatewayStatus);
 
         PaymentAssert.assertThat(payment).isPending();
         verify(paymentRepository, never()).save(any(Payment.class));
@@ -60,22 +60,22 @@ class PaymentWebhookServiceTest {
 
     @ParameterizedTest
     @EnumSource(value = PaymentStatus.class, names = {"COMPLETED", "FAILED"})
-    void shouldIgnoreDuplicateWebhookForTerminalPayment(PaymentStatus currentStatus) {
+    void shouldIgnoreDuplicateGatewayStatusForSettledPayment(PaymentStatus currentStatus) {
         Payment payment = restoredPayment(currentStatus);
         when(paymentRepository.findById(payment.getId())).thenReturn(Optional.of(payment));
 
-        service.handleWebhook(payment.getId(), oppositeGatewayStatus(currentStatus));
+        service.applyGatewayPaymentStatus(payment.getId(), oppositeGatewayStatus(currentStatus));
 
         PaymentAssert.assertThat(payment).hasStatus(currentStatus);
         verify(paymentRepository, never()).save(any(Payment.class));
     }
 
     @Test
-    void shouldIgnoreWebhookForUnknownPayment() {
+    void shouldIgnoreGatewayStatusForUnknownPayment() {
         var paymentId = unknownPaymentId();
         when(paymentRepository.findById(paymentId)).thenReturn(Optional.empty());
 
-        service.handleWebhook(paymentId, GatewayPaymentStatus.SUCCESS);
+        service.applyGatewayPaymentStatus(paymentId, GatewayPaymentStatus.SUCCESS);
 
         verify(paymentRepository, never()).save(any(Payment.class));
     }

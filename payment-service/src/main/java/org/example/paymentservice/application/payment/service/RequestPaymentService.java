@@ -2,8 +2,8 @@ package org.example.paymentservice.application.payment.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.paymentservice.application.payment.port.in.ProcessPaymentCommand;
-import org.example.paymentservice.application.payment.port.in.ProcessPaymentUseCase;
+import org.example.paymentservice.application.payment.port.in.RequestPaymentCommand;
+import org.example.paymentservice.application.payment.port.in.RequestPaymentUseCase;
 import org.example.paymentservice.application.payment.port.out.PaymentRepository;
 import org.example.paymentservice.domain.model.payment.Payment;
 import org.example.paymentservice.domain.specification.Specification;
@@ -13,20 +13,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProcessPaymentService implements ProcessPaymentUseCase {
+public class RequestPaymentService implements RequestPaymentUseCase {
 
     private final PaymentRepository paymentRepository;
     private final Specification<Payment> maxAmountSpecification;
 
     @Override
     @Transactional
-    public void processPayment(ProcessPaymentCommand command) {
+    public void requestPayment(RequestPaymentCommand command) {
         Payment payment = Payment.initialize(command.orderId(), command.customerId(), command.amount());
 
-        payment.checkSpecification(maxAmountSpecification);
+        payment.ensureAllowedBy(maxAmountSpecification);
 
         paymentRepository.save(payment);
 
-        log.info("Payment initiated for orderId: {}. Awaiting external gateway processing.", command.orderId());
+        log.info("Payment requested for orderId: {}. Awaiting external gateway decision.", command.orderId());
     }
 }

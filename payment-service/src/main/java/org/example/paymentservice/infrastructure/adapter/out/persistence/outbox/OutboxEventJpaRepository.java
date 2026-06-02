@@ -11,5 +11,5 @@ import java.util.UUID;
 public interface OutboxEventJpaRepository extends JpaRepository<OutboxEventJpaEntity, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM OutboxEventJpaEntity e WHERE e.processed = false ORDER BY e.createdAt ASC LIMIT 50")
-    List<OutboxEventJpaEntity> findTop50UnprocessedEvents();
+    List<OutboxEventJpaEntity> findTop50PendingMessages();
 }

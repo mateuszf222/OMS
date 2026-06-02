@@ -23,39 +23,39 @@ public class OrderPersistenceAdapter implements OrderRepository {
     private final OrderJpaRepository jpaRepository;
     private final OutboxEventJpaRepository outboxRepository;
     private final ObjectMapper objectMapper;
-    private final OrderEntityMapper mapper;
-    private final DomainToIntegrationEventTranslator translator;
+    private final OrderEntityMapper entityMapper;
+    private final DomainToIntegrationEventTranslator integrationEventTranslator;
 
     @Override
     public Order save(Order order) {
-        OrderJpaEntity entity = mapper.toJpaEntity(order);
+        OrderJpaEntity entity = entityMapper.toJpaEntity(order);
         OrderJpaEntity savedEntity = jpaRepository.save(entity);
 
-        publishDomainEvents(order);
+        recordDomainEventsInOutbox(order);
 
-        return mapper.toDomainModel(savedEntity);
+        return entityMapper.toDomainModel(savedEntity);
     }
 
     @Override
     public Optional<Order> findById(UUID id) {
-        return jpaRepository.findByIdWithItems(id).map(mapper::toDomainModel);
+        return jpaRepository.findByIdWithItems(id).map(entityMapper::toDomainModel);
     }
 
-    private void publishDomainEvents(Order order) {
+    private void recordDomainEventsInOutbox(Order order) {
         for (DomainEvent domainEvent : order.pullDomainEvents()) {
-            translator.translate(domainEvent)
-                    .ifPresent(infraEvent -> saveToOutbox(order.getId(), domainEvent, infraEvent));
+            integrationEventTranslator.translate(domainEvent)
+                    .ifPresent(integrationEvent -> appendOrderMessageToOutbox(order.getId(), domainEvent, integrationEvent));
         }
     }
 
-    private void saveToOutbox(UUID orderId, DomainEvent domainEvent, IntegrationEvent infraEvent) {
+    private void appendOrderMessageToOutbox(UUID orderId, DomainEvent domainEvent, IntegrationEvent integrationEvent) {
         try {
             OutboxEventJpaEntity outboxEvent = OutboxEventJpaEntity.builder()
                     .id(UUID.randomUUID())
                     .aggregateType("Order")
                     .aggregateId(orderId.toString())
                     .eventType(domainEvent.getClass().getSimpleName())
-                    .payload(objectMapper.writeValueAsString(infraEvent))
+                    .payload(objectMapper.writeValueAsString(integrationEvent))
                     .createdAt(ZonedDateTime.now())
                     .processed(false)
                     .build();

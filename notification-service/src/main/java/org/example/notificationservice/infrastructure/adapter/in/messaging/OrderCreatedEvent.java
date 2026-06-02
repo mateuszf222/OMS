@@ -8,4 +8,10 @@ public record OrderCreatedEvent(
         UUID customerId,
         BigDecimal totalAmount,
         String currency
-) {}
+) implements NotificationEvent {
+
+    @Override
+    public String notificationMessageId() {
+        return orderId.toString();
+    }
+}

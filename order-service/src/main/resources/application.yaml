@@ -31,7 +31,7 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
-      retries: 3
+      retries: 10
     consumer:
       group-id: order-service-group
       auto-offset-reset: earliest
@@ -44,6 +44,11 @@ spring:
       payment-failed-events: payment-failed-events
       groups:
         order-service: order-service-group
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
   security:
     oauth2:

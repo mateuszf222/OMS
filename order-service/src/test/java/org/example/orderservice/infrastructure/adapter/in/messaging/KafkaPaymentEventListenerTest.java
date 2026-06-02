@@ -24,9 +24,12 @@ import static org.example.orderservice.infrastructure.adapter.in.messaging.Payme
 import static org.example.orderservice.infrastructure.adapter.in.messaging.PaymentEventTestData.paymentCompletedEvent;
 import static org.example.orderservice.infrastructure.adapter.in.messaging.PaymentEventTestData.paymentFailedBecauseLimitExceeded;
 import static org.example.orderservice.infrastructure.adapter.in.messaging.PaymentEventTestData.paymentFailedEvent;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class KafkaPaymentEventListenerTest {
@@ -40,59 +43,81 @@ class KafkaPaymentEventListenerTest {
     @Mock
     private Acknowledgment acknowledgment;
 
+    @Mock
+    private RedisMessageDeduplicator messageDeduplicator;
+
     @InjectMocks
     private KafkaPaymentEventListener listener;
 
     @Test
     void shouldCompleteOrderAndAcknowledgePaymentCompletedEvent() {
         PaymentCompletedEvent event = paymentCompletedEvent();
+        messageClaimWillBeAccepted();
 
-        listener.handlePaymentCompleted(event, acknowledgment);
+        listener.completeOrderPaymentAfterPaymentCompleted(event, null, acknowledgment);
 
         ArgumentCaptor<CompletePaymentCommand> commandCaptor = ArgumentCaptor.forClass(CompletePaymentCommand.class);
         verify(completePaymentUseCase).completePayment(commandCaptor.capture());
         assertThat(commandCaptor.getValue()).isEqualTo(completePaymentCommandFor(event));
+        verify(messageDeduplicator).rememberMessageAsProcessed(any(MessageDeduplicationKey.class));
         verify(acknowledgment).acknowledge();
     }
 
     @Test
     void shouldAcknowledgeDomainExceptionAsIdempotentCompletedEvent() {
         PaymentCompletedEvent event = paymentCompletedEvent();
+        messageClaimWillBeAccepted();
         doThrow(new InvalidOrderStateTransitionException(
                 OrderStatus.CONFIRMED,
                 OrderStatus.CONFIRMED,
-                "confirm payment"
+                "apply successful payment"
         ))
                 .when(completePaymentUseCase)
                 .completePayment(completePaymentCommandFor(event));
 
-        listener.handlePaymentCompleted(event, acknowledgment);
+        listener.completeOrderPaymentAfterPaymentCompleted(event, null, acknowledgment);
 
+        verify(messageDeduplicator).rememberMessageAsProcessed(any(MessageDeduplicationKey.class));
         verify(acknowledgment).acknowledge();
     }
 
     @Test
     void shouldNotAcknowledgeCompletedEventWhenOptimisticLockingFails() {
         PaymentCompletedEvent event = paymentCompletedEvent();
+        messageClaimWillBeAccepted();
         doThrow(new OptimisticLockingFailureException("conflict"))
                 .when(completePaymentUseCase)
                 .completePayment(completePaymentCommandFor(event));
 
-        listener.handlePaymentCompleted(event, acknowledgment);
+        listener.completeOrderPaymentAfterPaymentCompleted(event, null, acknowledgment);
 
+        verify(messageDeduplicator).releaseMessageClaim(any(MessageDeduplicationKey.class));
         verify(acknowledgment, never()).acknowledge();
     }
 
     @Test
     void shouldCancelOrderAndAcknowledgePaymentFailedEventWithReason() {
         PaymentFailedEvent event = paymentFailedBecauseLimitExceeded();
+        messageClaimWillBeAccepted();
 
-        listener.handlePaymentFailed(event, acknowledgment);
+        listener.cancelOrderAfterPaymentFailed(event, null, acknowledgment);
 
         ArgumentCaptor<CancelOrderCommand> commandCaptor = ArgumentCaptor.forClass(CancelOrderCommand.class);
         verify(cancelOrderUseCase).cancelOrder(commandCaptor.capture());
         assertThat(commandCaptor.getValue()).isEqualTo(cancelOrderCommandFor(event));
         assertThat(commandCaptor.getValue().reason()).isEqualTo(LIMIT_EXCEEDED);
+        verify(messageDeduplicator).rememberMessageAsProcessed(any(MessageDeduplicationKey.class));
+        verify(acknowledgment).acknowledge();
+    }
+
+    @Test
+    void shouldSkipDuplicatePaymentCompletedEventBeforeBusinessUseCase() {
+        PaymentCompletedEvent event = paymentCompletedEvent();
+        messageClaimWillBeRejected();
+
+        listener.completeOrderPaymentAfterPaymentCompleted(event, null, acknowledgment);
+
+        verifyNoInteractions(completePaymentUseCase);
         verify(acknowledgment).acknowledge();
     }
 
@@ -100,14 +125,24 @@ class KafkaPaymentEventListenerTest {
     void shouldRethrowUnexpectedFailureForKafkaRedelivery() {
         PaymentFailedEvent event = paymentFailedEvent(TIMEOUT);
         RuntimeException unexpected = new RuntimeException("database unavailable");
+        messageClaimWillBeAccepted();
         doThrow(unexpected)
                 .when(cancelOrderUseCase)
                 .cancelOrder(cancelOrderCommandFor(event));
 
-        assertThatThrownBy(() -> listener.handlePaymentFailed(event, acknowledgment))
+        assertThatThrownBy(() -> listener.cancelOrderAfterPaymentFailed(event, null, acknowledgment))
                 .isSameAs(unexpected);
 
+        verify(messageDeduplicator).releaseMessageClaim(any(MessageDeduplicationKey.class));
         verify(acknowledgment, never()).acknowledge();
+    }
+
+    private void messageClaimWillBeAccepted() {
+        when(messageDeduplicator.claimMessageForProcessing(any(MessageDeduplicationKey.class))).thenReturn(true);
+    }
+
+    private void messageClaimWillBeRejected() {
+        when(messageDeduplicator.claimMessageForProcessing(any(MessageDeduplicationKey.class))).thenReturn(false);
     }
 }
 

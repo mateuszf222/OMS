@@ -79,7 +79,7 @@ class PaymentTest {
     void shouldPassLimitValidationForValidAmount() {
         Payment payment = Payment.initialize(ids.orderId(), ids.customerId(), amountWithinPlnLimit());
 
-        payment.checkSpecification(new MaxAmountSpecification());
+        payment.ensureAllowedBy(new MaxAmountSpecification());
 
         PaymentAssert.assertThat(payment).isPending();
     }

@@ -38,7 +38,7 @@ class MaxAmountSpecificationTest {
         Payment payment = paymentWithAmount(amount, currency);
 
         assertThatExceptionOfType(PaymentDomainException.class)
-                .isThrownBy(() -> payment.checkSpecification(specification))
+                .isThrownBy(() -> payment.ensureAllowedBy(specification))
                 .withMessageContaining("maksymalny dopuszczalny limit");
     }
 }

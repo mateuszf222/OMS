@@ -18,8 +18,8 @@ import static org.example.orderservice.domain.model.data.OrderTestData.PLN;
 class OrderLinesTest {
 
     @Test
-    void shouldCalculateTotalForAllLinesInSingleCurrency() {
-        MoneyAssert.assertThat(twoPlnLines().calculateTotal())
+    void shouldReturnTotalAmountForAllLinesInSingleCurrency() {
+        MoneyAssert.assertThat(twoPlnLines().totalAmount())
                 .hasValue(EXPECTED_TOTAL_FOR_TWO_PLN_LINES, PLN);
     }
 

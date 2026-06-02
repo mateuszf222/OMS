@@ -7,4 +7,10 @@ public record PaymentFailedEvent(
         UUID paymentId,
         UUID customerId,
         String reason
-) {}
+) implements NotificationEvent {
+
+    @Override
+    public String notificationMessageId() {
+        return paymentId.toString();
+    }
+}

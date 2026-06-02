@@ -1,6 +1,6 @@
 package org.example.paymentservice.application.payment.service;
 
-import org.example.paymentservice.application.payment.port.in.ProcessPaymentCommand;
+import org.example.paymentservice.application.payment.port.in.RequestPaymentCommand;
 import org.example.paymentservice.application.payment.port.out.PaymentRepository;
 import org.example.paymentservice.domain.exception.PaymentDomainException;
 import org.example.paymentservice.domain.model.PaymentAssert;
@@ -14,30 +14,30 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.example.paymentservice.application.payment.service.PaymentCommandTestData.processPaymentAbovePlnLimit;
-import static org.example.paymentservice.application.payment.service.PaymentCommandTestData.processPaymentWithinPlnLimit;
+import static org.example.paymentservice.application.payment.service.PaymentRequestTestData.paymentRequestAbovePlnLimit;
+import static org.example.paymentservice.application.payment.service.PaymentRequestTestData.paymentRequestWithinPlnLimit;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class ProcessPaymentServiceTest {
+class RequestPaymentServiceTest {
 
     @Mock
     private PaymentRepository paymentRepository;
 
-    private ProcessPaymentService service;
+    private RequestPaymentService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProcessPaymentService(paymentRepository, new MaxAmountSpecification());
+        service = new RequestPaymentService(paymentRepository, new MaxAmountSpecification());
     }
 
     @Test
-    void shouldInitializePendingPaymentAndSaveItWhenLimitSpecificationPasses() {
-        ProcessPaymentCommand command = processPaymentWithinPlnLimit();
+    void shouldCreatePendingPaymentRequestWhenAmountLimitAllowsIt() {
+        RequestPaymentCommand command = paymentRequestWithinPlnLimit();
 
-        service.processPayment(command);
+        service.requestPayment(command);
 
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(paymentCaptor.capture());
@@ -49,9 +49,9 @@ class ProcessPaymentServiceTest {
     }
 
     @Test
-    void shouldRejectPaymentAndNotSaveWhenLimitSpecificationFails() {
+    void shouldRejectPaymentRequestAboveAmountLimit() {
         assertThatExceptionOfType(PaymentDomainException.class)
-                .isThrownBy(() -> service.processPayment(processPaymentAbovePlnLimit()))
+                .isThrownBy(() -> service.requestPayment(paymentRequestAbovePlnLimit()))
                 .withMessageContaining("maksymalny dopuszczalny limit");
 
         verify(paymentRepository, never()).save(any(Payment.class));

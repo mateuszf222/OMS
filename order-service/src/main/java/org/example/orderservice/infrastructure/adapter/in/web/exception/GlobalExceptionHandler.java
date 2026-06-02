@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ProblemDetail> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ProblemDetail> onValidationException(MethodArgumentNotValidException ex) {
         String details = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining("; "));
@@ -39,7 +39,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(OrderNotFoundException.class)
-    public ResponseEntity<ProblemDetail> handleOrderNotFound(OrderNotFoundException ex) {
+    public ResponseEntity<ProblemDetail> onOrderNotFound(OrderNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,
                 ex.getMessage()
@@ -53,7 +53,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(OrderDomainException.class)
-    public ResponseEntity<ProblemDetail> handleDomainException(OrderDomainException ex) {
+    public ResponseEntity<ProblemDetail> onOrderDomainException(OrderDomainException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNPROCESSABLE_ENTITY,
                 ex.getMessage()
@@ -67,7 +67,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(OptimisticLockingFailureException.class)
-    public ResponseEntity<ProblemDetail> handleOptimisticLockingFailure(OptimisticLockingFailureException ex) {
+    public ResponseEntity<ProblemDetail> onOptimisticLockingFailure(OptimisticLockingFailureException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
                 "The resource was modified by another request. Please refresh and try again."
@@ -81,7 +81,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidCurrencyException.class)
-    public ResponseEntity<ProblemDetail> handleInvalidCurrency(InvalidCurrencyException ex) {
+    public ResponseEntity<ProblemDetail> onInvalidCurrency(InvalidCurrencyException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNPROCESSABLE_ENTITY,
                 ex.getMessage()
@@ -95,7 +95,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ProblemDetail> handleGenericException(Exception ex) {
+    public ResponseEntity<ProblemDetail> onUnexpectedException(Exception ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred. Please contact support if the problem persists."

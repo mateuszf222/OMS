@@ -57,10 +57,10 @@ public class OrderCommandService implements
         Order order = orderRepository.findById(command.orderId())
                 .orElseThrow(() -> new OrderNotFoundException(command.orderId()));
 
-        order.confirmPayment();
+        order.applySuccessfulPayment();
         orderRepository.save(order);
 
-        log.info("Payment completed for order: {}", command.orderId());
+        log.info("Order {} confirmed after successful payment.", command.orderId());
     }
 
     @Override
@@ -71,7 +71,7 @@ public class OrderCommandService implements
         Order order = orderRepository.findById(command.orderId())
                 .orElseThrow(() -> new OrderNotFoundException(command.orderId()));
 
-        order.cancel(command.reason());
+        order.cancelWithReason(command.reason());
         orderRepository.save(order);
 
         log.info("Order {} cancelled with reason: {}", command.orderId(), command.reason());

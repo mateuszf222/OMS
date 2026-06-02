@@ -2,15 +2,12 @@ package org.example.orderservice.domain.model.assertion;
 
 import org.example.orderservice.domain.model.OrderStatus;
 
-import org.example.orderservice.domain.model.OrderState;
-
 import org.example.orderservice.domain.model.Order;
 
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 import org.example.orderservice.domain.event.DomainEvent;
 import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
-import org.example.orderservice.domain.exception.InvalidOrderStateTransitionException;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -83,7 +80,7 @@ public class OrderAssert extends AbstractAssert<OrderAssert, Order> {
     public OrderAssert hasTotalAmount(BigDecimal amount, Currency currency) {
         isNotNull();
 
-        MoneyAssert.assertThat(actual.getTotalAmount())
+        MoneyAssert.assertThat(actual.totalAmount())
                 .hasValue(amount, currency);
         return this;
     }
@@ -191,16 +188,6 @@ public class OrderAssert extends AbstractAssert<OrderAssert, Order> {
         return this;
     }
 
-    public OrderAssert cannotBeCancelledBecauseItIsAlreadyConfirmed() {
-        isConfirmed();
-
-        Order probe = snapshotOf(actual);
-        Assertions.assertThatExceptionOfType(InvalidOrderStateTransitionException.class)
-                .isThrownBy(() -> probe.cancel("assertion probe"))
-                .withMessageContaining(OrderStatus.CONFIRMED.name());
-        return this;
-    }
-
     private List<DomainEvent> pullDomainEvents() {
         List<DomainEvent> events = actual.pullDomainEvents();
 
@@ -232,17 +219,6 @@ public class OrderAssert extends AbstractAssert<OrderAssert, Order> {
         } catch (ReflectiveOperationException e) {
             throw new AssertionError("Could not return pulled domain events to the aggregate.", e);
         }
-    }
-
-    private static Order snapshotOf(Order order) {
-        return Order.restore(new OrderState(
-                order.getId(),
-                order.getCustomerId(),
-                order.getStatus(),
-                order.getItems(),
-                order.getCreatedAt(),
-                order.getVersion()
-        ));
     }
 
     public static final class ItemCountAssert {

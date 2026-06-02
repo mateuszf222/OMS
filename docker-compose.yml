@@ -41,11 +41,17 @@ services:
       LOGGING_LEVEL_ORG_APACHE_KAFKA_CLIENTS: ERROR
       LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_KAFKA: ERROR
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     volumes:
       - kafka_data:/var/lib/kafka/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
 
 volumes:
   keycloak_data:
   kafka_data:
+  redis_data:
