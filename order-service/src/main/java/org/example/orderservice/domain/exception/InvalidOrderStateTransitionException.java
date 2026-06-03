@@ -2,7 +2,7 @@ package org.example.orderservice.domain.exception;
 
 import org.example.orderservice.domain.model.OrderStatus;
 
-public class InvalidOrderStateTransitionException extends OrderDomainException {
+public final class InvalidOrderStateTransitionException extends RuntimeException implements OrderBusinessRefusal {
 
     private final OrderStatus currentStatus;
     private final OrderStatus targetStatus;

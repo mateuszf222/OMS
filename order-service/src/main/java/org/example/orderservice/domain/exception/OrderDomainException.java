@@ -1,6 +1,12 @@
 package org.example.orderservice.domain.exception;
 
-public class OrderDomainException extends DomainException {
+public abstract sealed class OrderDomainException extends DomainException permits
+        CustomerRequiredForOrderException,
+        InvalidMoneyOperationException,
+        InvalidOrderItemException,
+        OrderLineCannotBeNullException,
+        OrderItemsMustUseSameCurrencyException,
+        OrderMustContainProductsException {
 
     public OrderDomainException(String message) {
         super(message);

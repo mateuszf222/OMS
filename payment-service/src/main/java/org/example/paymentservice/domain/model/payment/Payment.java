@@ -4,11 +4,12 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.example.paymentservice.domain.exception.PaymentDomainException;
+import org.example.paymentservice.domain.exception.InvalidPaymentStateTransitionException;
+import org.example.paymentservice.domain.exception.MissingPaymentDataException;
+import org.example.paymentservice.domain.exception.PaymentAmountLimitExceededException;
 import org.example.paymentservice.domain.model.Money;
 import org.example.paymentservice.domain.specification.Specification;
 
-import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
@@ -23,11 +24,15 @@ public class Payment {
     private final ZonedDateTime createdAt;
     private final UUID customerId;
 
-    private static final BigDecimal MAX_PAYMENT_LIMIT_VALUE = new BigDecimal("10000.00");
-
     public static Payment initialize(UUID orderId, UUID customerId, Money amount) {
-        if (orderId == null || customerId == null || amount == null || amount.amount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new PaymentDomainException("Invalid payment initialization parameters.");
+        if (orderId == null) {
+            throw new MissingPaymentDataException("orderId");
+        }
+        if (customerId == null) {
+            throw new MissingPaymentDataException("customerId");
+        }
+        if (amount == null) {
+            throw new MissingPaymentDataException("amount");
         }
         return new Payment(
                 UUID.randomUUID(),
@@ -53,14 +58,14 @@ public class Payment {
 
     public void complete() {
         if (this.status != PaymentStatus.PENDING) {
-            throw new PaymentDomainException("Cannot complete payment in status: " + this.status);
+            throw new InvalidPaymentStateTransitionException("complete", this.status, PaymentStatus.COMPLETED);
         }
         this.status = PaymentStatus.COMPLETED;
     }
 
     public void fail() {
         if (this.status != PaymentStatus.PENDING) {
-            throw new PaymentDomainException("Cannot fail payment in status: " + this.status);
+            throw new InvalidPaymentStateTransitionException("fail", this.status, PaymentStatus.FAILED);
         }
         this.status = PaymentStatus.FAILED;
     }
@@ -75,7 +80,7 @@ public class Payment {
 
     public void ensureAllowedBy(Specification<Payment> specification) {
         if (!specification.isSatisfiedBy(this)) {
-            throw new PaymentDomainException(specification.getReasonNotSatisfied());
+            throw new PaymentAmountLimitExceededException(specification.getReasonNotSatisfied());
         }
     }
 }

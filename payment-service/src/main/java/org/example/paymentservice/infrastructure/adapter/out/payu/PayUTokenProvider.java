@@ -22,13 +22,22 @@ public class PayUTokenProvider {
         formData.add("client_id", properties.getClientId());
         formData.add("client_secret", properties.getClientSecret());
 
-        PayUAuthResponse authResponse = restClient.post()
-                .uri(properties.getBaseUrl() + "/pl/standard/user/oauth/authorize")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(formData)
-                .retrieve()
-                .body(PayUAuthResponse.class);
+        PayUAuthResponse authResponse;
+        try {
+            authResponse = restClient.post()
+                    .uri(properties.getBaseUrl() + "/pl/standard/user/oauth/authorize")
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(formData)
+                    .retrieve()
+                    .body(PayUAuthResponse.class);
+        } catch (RuntimeException e) {
+            throw new PaymentGatewayCommunicationException("Failed to obtain PayU access token.", e);
+        }
+
+        if (authResponse == null || authResponse.accessToken() == null || authResponse.accessToken().isBlank()) {
+            throw new PaymentGatewayCommunicationException("PayU token response did not contain access token.");
+        }
 
         return authResponse.accessToken();
     }

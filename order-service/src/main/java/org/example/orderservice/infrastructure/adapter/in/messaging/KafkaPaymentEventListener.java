@@ -6,7 +6,7 @@ import org.example.orderservice.application.port.in.cancelorder.CancelOrderComma
 import org.example.orderservice.application.port.in.cancelorder.CancelOrderUseCase;
 import org.example.orderservice.application.port.in.completepayment.CompletePaymentCommand;
 import org.example.orderservice.application.port.in.completepayment.CompletePaymentUseCase;
-import org.example.orderservice.domain.exception.OrderDomainException;
+import org.example.orderservice.domain.exception.InvalidOrderStateTransitionException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -100,7 +100,7 @@ public class KafkaPaymentEventListener {
             messageDeduplicator.rememberMessageAsProcessed(messageKey);
             acknowledgment.acknowledge();
 
-        } catch (OrderDomainException e) {
+        } catch (InvalidOrderStateTransitionException e) {
             messageDeduplicator.rememberMessageAsProcessed(messageKey);
             log.warn("Idempotent skip for {} with paymentId {}: {}", event.eventType(), paymentId, e.getMessage());
             acknowledgment.acknowledge();

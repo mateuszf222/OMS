@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.paymentservice.application.exception.PaymentNotFoundException;
 import org.example.paymentservice.application.payment.port.out.PaymentGatewayOptions;
 import org.example.paymentservice.application.payment.port.out.PaymentGatewayPort;
 import org.example.paymentservice.application.payment.port.out.PaymentRepository;
@@ -98,7 +99,7 @@ public class PaymentGatewayWorker {
     ) {
         try {
             return paymentRepository.findById(event.paymentId())
-                    .orElseThrow(() -> new IllegalStateException("Payment not found: " + event.paymentId()));
+                    .orElseThrow(() -> new PaymentNotFoundException(event.paymentId()));
         } catch (RuntimeException e) {
             messageDeduplicator.releaseMessageClaim(messageKey);
             throw e;

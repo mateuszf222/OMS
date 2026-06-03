@@ -1,15 +1,20 @@
 package org.example.paymentservice.domain.model;
 
-import org.example.paymentservice.domain.exception.PaymentDomainException;
+import org.example.paymentservice.domain.exception.InvalidPaymentAmountException;
+import org.example.paymentservice.domain.exception.MissingPaymentCurrencyException;
+import org.example.paymentservice.domain.exception.MissingPaymentDataException;
+import org.example.paymentservice.domain.exception.MoneyCurrencyMismatchException;
+
 import java.math.BigDecimal;
 
 public record Money(BigDecimal amount, String currency) implements Comparable<Money> {
+
     public Money {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new PaymentDomainException("Kwota płatności musi być większa od zera.");
+            throw new InvalidPaymentAmountException(amount);
         }
         if (currency == null || currency.isBlank()) {
-            throw new PaymentDomainException("Waluta nie może być pusta.");
+            throw new MissingPaymentCurrencyException();
         }
     }
 
@@ -23,11 +28,11 @@ public record Money(BigDecimal amount, String currency) implements Comparable<Mo
 
     @Override
     public int compareTo(Money other) {
+        if (other == null) {
+            throw new MissingPaymentDataException("compared money");
+        }
         if (!this.currency.equals(other.currency)) {
-            throw new IllegalArgumentException(
-                    "Cannot compare money with different currencies: "
-                            + this.currency + " vs " + other.currency
-            );
+            throw new MoneyCurrencyMismatchException(this.currency, other.currency);
         }
         return this.amount.compareTo(other.amount);
     }

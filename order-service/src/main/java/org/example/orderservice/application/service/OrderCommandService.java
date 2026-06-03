@@ -9,7 +9,7 @@ import org.example.orderservice.application.port.in.completepayment.CompletePaym
 import org.example.orderservice.application.port.in.createorder.CreateOrderCommand;
 import org.example.orderservice.application.port.in.createorder.CreateOrderUseCase;
 import org.example.orderservice.application.port.out.OrderRepository;
-import org.example.orderservice.domain.exception.OrderNotFoundException;
+import org.example.orderservice.application.exception.OrderNotFoundException;
 import org.example.orderservice.domain.model.Money;
 import org.example.orderservice.domain.model.Order;
 import org.example.orderservice.domain.model.OrderItem;

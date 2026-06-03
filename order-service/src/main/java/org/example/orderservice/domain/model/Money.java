@@ -1,24 +1,30 @@
 package org.example.orderservice.domain.model;
 
+import org.example.orderservice.domain.exception.MissingMoneyDataException;
 import org.example.orderservice.domain.exception.MoneyCurrencyMismatchException;
 import org.example.orderservice.domain.exception.NegativeMoneyMultiplierException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Currency;
-import java.util.Objects;
 
 public record Money(BigDecimal amount, Currency currency) implements Comparable<Money> {
 
     public Money {
-        Objects.requireNonNull(amount, "Kwota nie może być null.");
-        Objects.requireNonNull(currency, "Waluta nie może być null.");
+        if (amount == null) {
+            throw new MissingMoneyDataException("amount");
+        }
+        if (currency == null) {
+            throw new MissingMoneyDataException("currency");
+        }
 
         amount = amount.setScale(currency.getDefaultFractionDigits(), RoundingMode.HALF_EVEN);
     }
 
     public Money multiply(BigDecimal multiplier) {
-        Objects.requireNonNull(multiplier, "Mnożnik nie może być null.");
+        if (multiplier == null) {
+            throw new MissingMoneyDataException("multiplier");
+        }
         if (multiplier.compareTo(BigDecimal.ZERO) < 0) {
             throw new NegativeMoneyMultiplierException(multiplier);
         }
@@ -50,7 +56,9 @@ public record Money(BigDecimal amount, Currency currency) implements Comparable<
     }
 
     private void requireSameCurrency(Money other) {
-        Objects.requireNonNull(other, "Porównywana kwota nie może być null.");
+        if (other == null) {
+            throw new MissingMoneyDataException("other");
+        }
         if (!this.currency.equals(other.currency())) {
             throw new MoneyCurrencyMismatchException(this.currency, other.currency());
         }

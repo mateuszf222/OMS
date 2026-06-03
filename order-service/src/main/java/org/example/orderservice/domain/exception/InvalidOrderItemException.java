@@ -1,6 +1,8 @@
 package org.example.orderservice.domain.exception;
 
-public class InvalidOrderItemException extends OrderDomainException {
+public abstract sealed class InvalidOrderItemException extends OrderDomainException permits
+        InvalidOrderItemQuantityException,
+        MissingOrderItemDataException {
 
     public InvalidOrderItemException(String message) {
         super(message);

@@ -12,7 +12,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.example.notificationservice.NotificationTestData.paymentCompletedEmail;
 import static org.example.notificationservice.NotificationTestData.paymentFailedEmail;
 import static org.mockito.Mockito.verify;
@@ -42,10 +42,11 @@ class EmailSenderAdapterTest {
     }
 
     @Test
-    void shouldHandleFallbackWithoutThrowingAfterMailRetryFailure() {
+    void shouldSignalDeliveryFailureAfterMailRetryFailure() {
         EmailMessage email = paymentFailedEmail();
 
-        assertThatCode(() -> adapter.sendEmailFallback(email, new MailSendException("smtp unavailable")))
-                .doesNotThrowAnyException();
+        assertThatExceptionOfType(EmailDeliveryFailedException.class)
+                .isThrownBy(() -> adapter.sendEmailFallback(email, new MailSendException("smtp unavailable")))
+                .withMessageContaining(email.to());
     }
 }

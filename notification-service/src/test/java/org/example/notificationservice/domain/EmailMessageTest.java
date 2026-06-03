@@ -1,5 +1,8 @@
 package org.example.notificationservice.domain;
 
+import org.example.notificationservice.domain.exception.InvalidEmailRecipientException;
+import org.example.notificationservice.domain.exception.MissingEmailBodyException;
+import org.example.notificationservice.domain.exception.MissingEmailSubjectException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -27,21 +30,32 @@ class EmailMessageTest {
     @NullSource
     @ValueSource(strings = {"invalid", ""})
     void shouldRejectInvalidRecipientAddress(String recipient) {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(InvalidEmailRecipientException.class)
                 .isThrownBy(() -> anEmailMessage()
                         .withRecipient(recipient)
                         .build())
-                .withMessageContaining("adresu e-mail");
+                .withMessageContaining("recipient");
     }
 
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {" "})
     void shouldRejectBlankSubject(String subject) {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MissingEmailSubjectException.class)
                 .isThrownBy(() -> anEmailMessage()
                         .withSubject(subject)
                         .build())
-                .withMessageContaining("Temat");
+                .withMessageContaining("subject");
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" "})
+    void shouldRejectBlankBody(String text) {
+        assertThatExceptionOfType(MissingEmailBodyException.class)
+                .isThrownBy(() -> anEmailMessage()
+                        .withText(text)
+                        .build())
+                .withMessageContaining("body");
     }
 }

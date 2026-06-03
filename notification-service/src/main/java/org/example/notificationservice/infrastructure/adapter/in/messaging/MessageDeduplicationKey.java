@@ -1,15 +1,17 @@
 package org.example.notificationservice.infrastructure.adapter.in.messaging;
 
-import java.util.Objects;
-
 public record MessageDeduplicationKey(String value) {
 
     public static final String OUTBOX_EVENT_ID_HEADER = "outbox-event-id";
 
     public MessageDeduplicationKey {
-        value = Objects.requireNonNull(value, "deduplication key value cannot be null").trim();
+        if (value == null) {
+            throw InvalidMessageDeduplicationKeyException.missingKeyValue();
+        }
+
+        value = value.trim();
         if (value.isBlank()) {
-            throw new IllegalArgumentException("deduplication key value cannot be blank");
+            throw InvalidMessageDeduplicationKeyException.blankKeyValue();
         }
     }
 

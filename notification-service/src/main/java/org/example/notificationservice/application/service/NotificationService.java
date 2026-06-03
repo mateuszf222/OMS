@@ -2,6 +2,7 @@ package org.example.notificationservice.application.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.notificationservice.application.exception.MissingNotificationDataException;
 import org.example.notificationservice.application.port.in.SendNotificationUseCase;
 import org.example.notificationservice.domain.EmailMessage;
 import org.example.notificationservice.infrastructure.adapter.out.mail.EmailSenderAdapter;
@@ -18,6 +19,8 @@ public class NotificationService implements SendNotificationUseCase {
 
     @Override
     public void sendOrderCreatedNotification(UUID orderId, UUID customerId) {
+        requireNotificationData(orderId, customerId);
+
         EmailMessage message = new EmailMessage(
                 customerId.toString() + "@dummy-domain.com",
                 "Potwierdzenie przyjęcia zamówienia: " + orderId,
@@ -28,6 +31,8 @@ public class NotificationService implements SendNotificationUseCase {
 
     @Override
     public void sendPaymentSuccessNotification(UUID orderId, UUID customerId) {
+        requireNotificationData(orderId, customerId);
+
         EmailMessage message = new EmailMessage(
                 customerId.toString() + "@dummy-domain.com",
                 "Płatność zakończona sukcesem dla zamówienia: " + orderId,
@@ -38,11 +43,25 @@ public class NotificationService implements SendNotificationUseCase {
 
     @Override
     public void sendPaymentFailedNotification(UUID orderId, UUID customerId, String reason) {
+        requireNotificationData(orderId, customerId);
+        if (reason == null || reason.isBlank()) {
+            throw new MissingNotificationDataException("paymentFailureReason");
+        }
+
         EmailMessage message = new EmailMessage(
                 customerId.toString() + "@dummy-domain.com",
                 "Płatność odrzucona dla zamówienia: " + orderId,
                 String.format("Płatność za zamówienie %s została odrzucona.\nPowód: %s.\nZamówienie zostało anulowane.", orderId, reason)
         );
         emailSenderAdapter.sendEmail(message);
+    }
+
+    private void requireNotificationData(UUID orderId, UUID customerId) {
+        if (orderId == null) {
+            throw new MissingNotificationDataException("orderId");
+        }
+        if (customerId == null) {
+            throw new MissingNotificationDataException("customerId");
+        }
     }
 }

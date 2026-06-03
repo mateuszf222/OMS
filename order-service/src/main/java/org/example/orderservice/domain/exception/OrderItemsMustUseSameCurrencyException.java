@@ -2,7 +2,7 @@ package org.example.orderservice.domain.exception;
 
 import java.util.Currency;
 
-public class OrderItemsMustUseSameCurrencyException extends OrderDomainException {
+public final class OrderItemsMustUseSameCurrencyException extends OrderDomainException {
 
     public OrderItemsMustUseSameCurrencyException(Currency expected, Currency actual) {
         super(String.format(

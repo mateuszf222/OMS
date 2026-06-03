@@ -2,8 +2,10 @@ package org.example.orderservice.domain.model.test;
 
 import org.example.orderservice.domain.model.assertion.MoneyAssert;
 
+import org.example.orderservice.domain.exception.MissingMoneyDataException;
 import org.example.orderservice.domain.exception.MoneyCurrencyMismatchException;
 import org.example.orderservice.domain.exception.NegativeMoneyMultiplierException;
+import org.example.orderservice.domain.model.Money;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -46,6 +48,20 @@ class OrderMoneyTest {
         assertThatExceptionOfType(NegativeMoneyMultiplierException.class)
                 .isThrownBy(() -> itemPriceToMultiply().multiply(invalidMultiplier(value)))
                 .withMessageContaining("ujemny");
+    }
+
+    @Test
+    void shouldRejectMissingAmount() {
+        assertThatExceptionOfType(MissingMoneyDataException.class)
+                .isThrownBy(() -> new Money(null, PLN))
+                .withMessageContaining("amount");
+    }
+
+    @Test
+    void shouldRejectMissingComparedMoney() {
+        assertThatExceptionOfType(MissingMoneyDataException.class)
+                .isThrownBy(() -> plnAmount().add(null))
+                .withMessageContaining("other");
     }
 }
 

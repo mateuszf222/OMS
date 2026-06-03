@@ -1,6 +1,6 @@
 package org.example.paymentservice.domain.model.payment;
 
-import org.example.paymentservice.domain.exception.PaymentDomainException;
+import org.example.paymentservice.domain.exception.PaymentAmountLimitExceededException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -37,7 +37,7 @@ class MaxAmountSpecificationTest {
     void shouldRejectPaymentsAboveCurrencyLimit(String amount, String currency) {
         Payment payment = paymentWithAmount(amount, currency);
 
-        assertThatExceptionOfType(PaymentDomainException.class)
+        assertThatExceptionOfType(PaymentAmountLimitExceededException.class)
                 .isThrownBy(() -> payment.ensureAllowedBy(specification))
                 .withMessageContaining("maksymalny dopuszczalny limit");
     }

@@ -1,5 +1,6 @@
 package org.example.orderservice.domain.model;
 
+import org.example.orderservice.domain.exception.OrderLineCannotBeNullException;
 import org.example.orderservice.domain.exception.OrderItemsMustUseSameCurrencyException;
 import org.example.orderservice.domain.exception.OrderMustContainProductsException;
 
@@ -11,6 +12,11 @@ public class OrderLines {
     public OrderLines(List<OrderItem> items) {
         if (items == null || items.isEmpty()) {
             throw new OrderMustContainProductsException();
+        }
+        for (OrderItem item : items) {
+            if (item == null) {
+                throw new OrderLineCannotBeNullException();
+            }
         }
 
         var firstCurrency = items.getFirst().getUnitPrice().currency();

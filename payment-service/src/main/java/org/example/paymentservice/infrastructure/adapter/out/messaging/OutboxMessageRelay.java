@@ -78,9 +78,9 @@ public class OutboxMessageRelay {
             kafkaTemplate.send(record).get();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while publishing outbox event.", e);
+            throw new OutboxMessagePublishException(event.getId(), e);
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to publish outbox event.", e);
+            throw new OutboxMessagePublishException(event.getId(), e);
         }
     }
 }

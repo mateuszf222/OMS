@@ -109,7 +109,7 @@ public class PaymentPersistenceAdapter implements PaymentRepository {
             outboxRepository.save(outboxEvent);
             log.info("Recorded {} in Outbox for aggregate: {}", eventType, aggregateId);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize " + eventType, e);
+            throw new OutboxMessageSerializationException(eventType, e);
         }
     }
 }

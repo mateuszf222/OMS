@@ -2,6 +2,7 @@ package org.example.orderservice.domain.model.test;
 
 import org.example.orderservice.domain.model.assertion.MoneyAssert;
 
+import org.example.orderservice.domain.exception.OrderLineCannotBeNullException;
 import org.example.orderservice.domain.exception.OrderItemsMustUseSameCurrencyException;
 import org.example.orderservice.domain.exception.OrderMustContainProductsException;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import static org.example.orderservice.domain.model.data.OrderLinesTestData.extr
 import static org.example.orderservice.domain.model.data.OrderLinesTestData.mixedCurrencyLines;
 import static org.example.orderservice.domain.model.data.OrderLinesTestData.singlePlnLine;
 import static org.example.orderservice.domain.model.data.OrderLinesTestData.twoPlnLines;
+import static org.example.orderservice.domain.model.data.OrderTestData.orderLinesWith;
 import static org.example.orderservice.domain.model.data.OrderTestData.PLN;
 
 class OrderLinesTest {
@@ -35,6 +37,12 @@ class OrderLinesTest {
         assertThatExceptionOfType(OrderItemsMustUseSameCurrencyException.class)
                 .isThrownBy(() -> mixedCurrencyLines())
                 .withMessageContaining("tej samej walucie");
+    }
+
+    @Test
+    void shouldRejectNullLineInsideOrderAggregate() {
+        assertThatExceptionOfType(OrderLineCannotBeNullException.class)
+                .isThrownBy(() -> orderLinesWith((org.example.orderservice.domain.model.OrderItem) null));
     }
 
     @Test

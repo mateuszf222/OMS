@@ -35,17 +35,26 @@ public class PayUClient {
                 List.of(new PayUOrderRequest.Product("Zamówienie", amountStr, "1"))
         );
 
-        PayUOrderResponse response = payURestClient.post()
-                .uri("/api/v2_1/orders")
-                .headers(headers -> {
-                    headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-                    headers.add("User-Agent", "Mozilla/5.0");
-                    headers.add("Accept-Language", "pl-PL");
-                })
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(request)
-                .retrieve()
-                .body(PayUOrderResponse.class);
+        PayUOrderResponse response;
+        try {
+            response = payURestClient.post()
+                    .uri("/api/v2_1/orders")
+                    .headers(headers -> {
+                        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+                        headers.add("User-Agent", "Mozilla/5.0");
+                        headers.add("Accept-Language", "pl-PL");
+                    })
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(PayUOrderResponse.class);
+        } catch (RuntimeException e) {
+            throw new PaymentGatewayCommunicationException("Failed to create PayU payment.", e);
+        }
+
+        if (response == null || response.redirectUri() == null || response.redirectUri().isBlank()) {
+            throw new PaymentGatewayCommunicationException("PayU payment response did not contain redirect URI.");
+        }
 
         log.info("Klient HTTP - Zlecono płatność w PayU. Link do opłacenia: {}", response.redirectUri());
         return response.redirectUri();

@@ -1,7 +1,6 @@
 package org.example.notificationservice.infrastructure.adapter.in.messaging;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 
 record OutboxEventId(String value) {
 
@@ -22,6 +21,10 @@ record OutboxEventId(String value) {
             return value;
         }
 
-        return Objects.requireNonNull(fallbackEventId, "fallback event id cannot be null");
+        if (fallbackEventId == null) {
+            throw InvalidMessageDeduplicationKeyException.missingFallbackEventId();
+        }
+
+        return fallbackEventId;
     }
 }

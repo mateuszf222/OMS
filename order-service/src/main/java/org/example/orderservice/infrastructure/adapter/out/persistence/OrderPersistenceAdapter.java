@@ -62,7 +62,7 @@ public class OrderPersistenceAdapter implements OrderRepository {
 
             outboxRepository.save(outboxEvent);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize event", e);
+            throw new OutboxMessageSerializationException(e);
         }
     }
 }

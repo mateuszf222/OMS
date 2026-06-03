@@ -30,5 +30,6 @@ public class EmailSenderAdapter {
 
     public void sendEmailFallback(EmailMessage email, MailException ex) {
         log.error("Nie udało się wysłać e-maila do {} pomimo 5 prób ponowienia. Przyczyna: {}", email.to(), ex.getMessage());
+        throw new EmailDeliveryFailedException(email, ex);
     }
 }

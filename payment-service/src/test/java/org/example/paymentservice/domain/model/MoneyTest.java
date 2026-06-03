@@ -1,10 +1,11 @@
 package org.example.paymentservice.domain.model;
 
-import org.example.paymentservice.domain.exception.PaymentDomainException;
+import org.example.paymentservice.domain.exception.InvalidPaymentAmountException;
+import org.example.paymentservice.domain.exception.MissingPaymentCurrencyException;
+import org.example.paymentservice.domain.exception.MoneyCurrencyMismatchException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
@@ -26,24 +27,30 @@ class MoneyTest {
                 .hasValueOf("123.45 PLN");
     }
 
+    @Test
+    void shouldRejectMissingAmount() {
+        assertThatExceptionOfType(InvalidPaymentAmountException.class)
+                .isThrownBy(() -> money((BigDecimal) null, PLN))
+                .withMessageContaining("cannot be null");
+    }
+
     @ParameterizedTest
-    @NullSource
     @ValueSource(strings = {"0.00", "-0.01"})
     void shouldRejectNonPositiveAmount(String amount) {
-        BigDecimal value = amount == null ? null : amount(amount);
+        BigDecimal value = amount(amount);
 
-        assertThatExceptionOfType(PaymentDomainException.class)
+        assertThatExceptionOfType(InvalidPaymentAmountException.class)
                 .isThrownBy(() -> money(value, PLN))
-                .withMessageContaining("zera");
+                .withMessageContaining("greater than zero");
     }
 
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {" "})
     void shouldRejectBlankCurrency(String currency) {
-        assertThatExceptionOfType(PaymentDomainException.class)
+        assertThatExceptionOfType(MissingPaymentCurrencyException.class)
                 .isThrownBy(() -> money("10.00", currency))
-                .withMessageContaining("Waluta");
+                .withMessageContaining("currency");
     }
 
     @Test
@@ -61,7 +68,7 @@ class MoneyTest {
 
         MoneyAssert.assertThat(higher)
                 .isGreaterThan(lower);
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MoneyCurrencyMismatchException.class)
                 .isThrownBy(() -> lower.compareTo(moneyInDifferentCurrency()))
                 .withMessageContaining("different currencies");
     }

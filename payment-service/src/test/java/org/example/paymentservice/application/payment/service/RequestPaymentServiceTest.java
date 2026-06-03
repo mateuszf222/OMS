@@ -2,7 +2,7 @@ package org.example.paymentservice.application.payment.service;
 
 import org.example.paymentservice.application.payment.port.in.RequestPaymentCommand;
 import org.example.paymentservice.application.payment.port.out.PaymentRepository;
-import org.example.paymentservice.domain.exception.PaymentDomainException;
+import org.example.paymentservice.domain.exception.PaymentAmountLimitExceededException;
 import org.example.paymentservice.domain.model.PaymentAssert;
 import org.example.paymentservice.domain.model.payment.MaxAmountSpecification;
 import org.example.paymentservice.domain.model.payment.Payment;
@@ -50,7 +50,7 @@ class RequestPaymentServiceTest {
 
     @Test
     void shouldRejectPaymentRequestAboveAmountLimit() {
-        assertThatExceptionOfType(PaymentDomainException.class)
+        assertThatExceptionOfType(PaymentAmountLimitExceededException.class)
                 .isThrownBy(() -> service.requestPayment(paymentRequestAbovePlnLimit()))
                 .withMessageContaining("maksymalny dopuszczalny limit");
 

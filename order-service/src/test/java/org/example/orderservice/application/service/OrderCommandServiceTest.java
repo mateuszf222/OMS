@@ -7,7 +7,7 @@ import org.example.orderservice.application.port.out.OrderRepository;
 import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
 import org.example.orderservice.domain.event.OrderCreatedDomainEvent;
 import org.example.orderservice.domain.exception.OrderItemsMustUseSameCurrencyException;
-import org.example.orderservice.domain.exception.OrderNotFoundException;
+import org.example.orderservice.application.exception.OrderNotFoundException;
 import org.example.orderservice.domain.model.Order;
 import org.example.orderservice.domain.model.assertion.OrderAssert;
 import org.example.orderservice.domain.model.builder.OrderBuilder;

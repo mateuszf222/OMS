@@ -1,6 +1,6 @@
 package org.example.paymentservice.domain.model;
 
-import org.example.paymentservice.domain.exception.PaymentDomainException;
+import org.example.paymentservice.domain.exception.InvalidPaymentStateTransitionException;
 import org.example.paymentservice.domain.model.PaymentTestData.PaymentIds;
 import org.example.paymentservice.domain.model.payment.MaxAmountSpecification;
 import org.example.paymentservice.domain.model.payment.Payment;
@@ -56,9 +56,14 @@ class PaymentTest {
     void shouldRejectCompletingTerminalPayment(PaymentStatus terminalStatus) {
         Payment payment = restoredPayment(terminalStatus);
 
-        assertThatExceptionOfType(PaymentDomainException.class)
+        assertThatExceptionOfType(InvalidPaymentStateTransitionException.class)
                 .isThrownBy(payment::complete)
-                .withMessageContaining("Cannot complete payment in status: " + terminalStatus);
+                .satisfies(exception -> {
+                    PaymentAssert.assertThat(payment).hasStatus(terminalStatus);
+                    org.assertj.core.api.Assertions.assertThat(exception.getOperation()).isEqualTo("complete");
+                    org.assertj.core.api.Assertions.assertThat(exception.getCurrentStatus()).isEqualTo(terminalStatus);
+                    org.assertj.core.api.Assertions.assertThat(exception.getTargetStatus()).isEqualTo(PaymentStatus.COMPLETED);
+                });
 
         PaymentAssert.assertThat(payment).hasStatus(terminalStatus);
     }
@@ -68,9 +73,14 @@ class PaymentTest {
     void shouldRejectFailingTerminalPayment(PaymentStatus terminalStatus) {
         Payment payment = restoredPayment(terminalStatus);
 
-        assertThatExceptionOfType(PaymentDomainException.class)
+        assertThatExceptionOfType(InvalidPaymentStateTransitionException.class)
                 .isThrownBy(payment::fail)
-                .withMessageContaining("Cannot fail payment in status: " + terminalStatus);
+                .satisfies(exception -> {
+                    PaymentAssert.assertThat(payment).hasStatus(terminalStatus);
+                    org.assertj.core.api.Assertions.assertThat(exception.getOperation()).isEqualTo("fail");
+                    org.assertj.core.api.Assertions.assertThat(exception.getCurrentStatus()).isEqualTo(terminalStatus);
+                    org.assertj.core.api.Assertions.assertThat(exception.getTargetStatus()).isEqualTo(PaymentStatus.FAILED);
+                });
 
         PaymentAssert.assertThat(payment).hasStatus(terminalStatus);
     }

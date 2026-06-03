@@ -64,7 +64,7 @@ class KafkaPaymentEventListenerTest {
     }
 
     @Test
-    void shouldAcknowledgeDomainExceptionAsIdempotentCompletedEvent() {
+    void shouldAcknowledgeBusinessRefusalAsIdempotentCompletedEvent() {
         PaymentCompletedEvent event = paymentCompletedEvent();
         messageClaimWillBeAccepted();
         doThrow(new InvalidOrderStateTransitionException(

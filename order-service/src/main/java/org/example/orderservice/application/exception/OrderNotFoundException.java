@@ -1,8 +1,8 @@
-package org.example.orderservice.domain.exception;
+package org.example.orderservice.application.exception;
 
 import java.util.UUID;
 
-public class OrderNotFoundException extends OrderDomainException {
+public final class OrderNotFoundException extends OrderApplicationException {
 
     private final UUID orderId;
 

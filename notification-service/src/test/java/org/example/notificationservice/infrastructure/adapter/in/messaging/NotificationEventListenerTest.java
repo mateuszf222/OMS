@@ -12,6 +12,7 @@ import org.springframework.kafka.support.Acknowledgment;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.example.notificationservice.NotificationTestData.REJECTED_BY_BANK;
 import static org.example.notificationservice.NotificationTestData.malformedJson;
 import static org.example.notificationservice.NotificationTestData.notificationIds;
@@ -21,8 +22,10 @@ import static org.example.notificationservice.NotificationTestData.paymentFailed
 import static org.example.notificationservice.NotificationTestData.payload;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 class NotificationEventListenerTest {
@@ -89,6 +92,23 @@ class NotificationEventListenerTest {
 
         verifyNoInteractions(notificationUseCase);
         verify(acknowledgment).acknowledge();
+    }
+
+    @Test
+    void shouldReleaseDeduplicationClaimAndRethrowWhenNotificationSendingFails() throws Exception {
+        NotificationIds ids = notificationIds();
+        String payload = payload(objectMapper, paymentCompletedEvent(ids));
+        RuntimeException failure = new RuntimeException("smtp unavailable");
+        doThrow(failure)
+                .when(notificationUseCase)
+                .sendPaymentSuccessNotification(ids.orderId(), ids.customerId());
+
+        assertThatExceptionOfType(RuntimeException.class)
+                .isThrownBy(() -> listener.sendNotificationAfterPaymentCompleted(payload, null, acknowledgment))
+                .withMessage("smtp unavailable");
+
+        verify(messageDeduplicator).releaseMessageClaim(any(MessageDeduplicationKey.class));
+        verify(acknowledgment, never()).acknowledge();
     }
 
     @ParameterizedTest

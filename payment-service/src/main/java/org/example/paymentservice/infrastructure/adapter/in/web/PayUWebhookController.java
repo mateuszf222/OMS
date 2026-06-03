@@ -1,6 +1,7 @@
 package org.example.paymentservice.infrastructure.adapter.in.web;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,9 +41,24 @@ public class PayUWebhookController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
+        PayUNotification notification = readNotification(rawBody);
+        if (notification == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (notification.order() == null || isBlank(notification.order().extOrderId())) {
+            log.warn("Malformed PayU webhook payload.");
+            return ResponseEntity.badRequest().build();
+        }
+
+        UUID paymentId;
         try {
-            PayUNotification notification = objectMapper.readValue(rawBody, PayUNotification.class);
-            UUID paymentId = UUID.fromString(notification.order().extOrderId());
+            paymentId = UUID.fromString(notification.order().extOrderId());
+        } catch (IllegalArgumentException exception) {
+            log.warn("PayU webhook contains invalid payment id: {}", notification.order().extOrderId());
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
             PayUStatus payUStatus = PayUStatus.fromString(notification.order().status());
             GatewayPaymentStatus gatewayStatus = gatewayStatusFrom(payUStatus);
 
@@ -51,6 +67,15 @@ public class PayUWebhookController {
         } catch (Exception exception) {
             log.error("PayU webhook could not be applied.", exception);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    private PayUNotification readNotification(String rawBody) {
+        try {
+            return objectMapper.readValue(rawBody, PayUNotification.class);
+        } catch (JsonProcessingException exception) {
+            log.warn("Malformed PayU webhook JSON: {}", exception.getOriginalMessage());
+            return null;
         }
     }
 
@@ -64,6 +89,10 @@ public class PayUWebhookController {
     }
 
     private boolean isSignatureValid(String signatureHeader, String rawBody) {
+        if (signatureHeader == null || rawBody == null) {
+            return false;
+        }
+
         String expectedSignature = "";
         String[] parts = signatureHeader.split(";");
 
@@ -80,6 +109,10 @@ public class PayUWebhookController {
         String actualSignature = DigestUtils.md5DigestAsHex(signaturePayload.getBytes());
 
         return actualSignature.equals(expectedSignature);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
