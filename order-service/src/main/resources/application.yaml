@@ -39,9 +39,9 @@ spring:
     listener:
       ack-mode: manual_immediate
     topics:
-      order-events: order-events
-      payment-completed-events: payment-completed-events
-      payment-failed-events: payment-failed-events
+      order-events: order.order-events.created.v1
+      payment-completed-events: payment.payment-events.completed.v1
+      payment-failed-events: payment.payment-events.failed.v1
       groups:
         order-service: order-service-group
 

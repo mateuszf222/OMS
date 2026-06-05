@@ -55,7 +55,7 @@ class PaymentGatewayWorkerTest {
         when(paymentGatewayPort.initiatePayment(any(Payment.class), any(PaymentGatewayOptions.class)))
                 .thenReturn("https://payu.example/redirect");
 
-        worker.initiateExternalPaymentAfterPaymentRequested(payload(event), null, acknowledgment);
+        worker.initiateExternalPaymentAfterPaymentRequested(paymentInitiatedPayload(event), null, acknowledgment);
 
         verify(paymentGatewayPort).initiatePayment(any(Payment.class), any(PaymentGatewayOptions.class));
         verify(messageDeduplicator).rememberMessageAsProcessed(any(MessageDeduplicationKey.class));
@@ -68,7 +68,7 @@ class PaymentGatewayWorkerTest {
         PaymentInitiatedEvent event = eventFor(payment);
         when(messageDeduplicator.claimMessageForProcessing(any(MessageDeduplicationKey.class))).thenReturn(false);
 
-        worker.initiateExternalPaymentAfterPaymentRequested(payload(event), null, acknowledgment);
+        worker.initiateExternalPaymentAfterPaymentRequested(paymentInitiatedPayload(event), null, acknowledgment);
 
         verifyNoInteractions(paymentRepository, paymentGatewayPort);
         verify(acknowledgment).acknowledge();
@@ -88,7 +88,7 @@ class PaymentGatewayWorkerTest {
         PaymentInitiatedEvent event = eventFor(payment);
         when(paymentRepository.findById(payment.getId())).thenReturn(Optional.of(payment));
 
-        worker.initiateExternalPaymentAfterPaymentRequested(payload(event), null, acknowledgment);
+        worker.initiateExternalPaymentAfterPaymentRequested(paymentInitiatedPayload(event), null, acknowledgment);
 
         verify(paymentGatewayPort, never()).initiatePayment(any(Payment.class), any(PaymentGatewayOptions.class));
         verify(messageDeduplicator).rememberMessageAsProcessed(any(MessageDeduplicationKey.class));
@@ -102,7 +102,11 @@ class PaymentGatewayWorkerTest {
         when(paymentRepository.findById(payment.getId())).thenReturn(Optional.empty());
 
         assertThatExceptionOfType(PaymentNotFoundException.class)
-                .isThrownBy(() -> worker.initiateExternalPaymentAfterPaymentRequested(payload(event), null, acknowledgment))
+                .isThrownBy(() -> worker.initiateExternalPaymentAfterPaymentRequested(
+                        paymentInitiatedPayload(event),
+                        null,
+                        acknowledgment
+                ))
                 .satisfies(exception -> org.assertj.core.api.Assertions.assertThat(exception.getPaymentId())
                         .isEqualTo(payment.getId()));
 
@@ -111,7 +115,7 @@ class PaymentGatewayWorkerTest {
         verify(acknowledgment, never()).acknowledge();
     }
 
-    private String payload(PaymentInitiatedEvent event) throws Exception {
+    private String paymentInitiatedPayload(PaymentInitiatedEvent event) throws Exception {
         return objectMapper.writeValueAsString(event);
     }
 

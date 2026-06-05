@@ -101,7 +101,7 @@ class OrderIntegrationTest {
         consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps)) {
-            consumer.subscribe(Collections.singletonList("order-events"));
+            consumer.subscribe(Collections.singletonList("order.order-events.created.v1"));
 
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(10));
 

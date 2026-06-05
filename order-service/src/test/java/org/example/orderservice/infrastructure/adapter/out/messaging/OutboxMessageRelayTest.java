@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class OutboxMessageRelayTest {
 
-    private static final String ORDER_EVENTS_TOPIC = "order-events";
+    private static final String ORDER_CREATED_TOPIC = "order.order-events.created.v1";
 
     @Mock
     private OutboxEventJpaRepository outboxRepository;
@@ -43,7 +43,7 @@ class OutboxMessageRelayTest {
     void shouldPublishOutboxEventAndMarkItAsProcessed() {
         OutboxEventJpaEntity event = outboxEvent();
         when(outboxRepository.findTop50PendingMessages()).thenReturn(List.of(event));
-        when(topics.getOrderEvents()).thenReturn(ORDER_EVENTS_TOPIC);
+        when(topics.getOrderEvents()).thenReturn(ORDER_CREATED_TOPIC);
         stubKafkaSend();
 
         new OutboxMessageRelay(outboxRepository, kafkaTemplate, topics).publishPendingOutboxMessages();
@@ -53,7 +53,7 @@ class OutboxMessageRelayTest {
         verify(outboxRepository).save(event);
 
         ProducerRecord<String, String> record = recordCaptor.getValue();
-        assertThat(record.topic()).isEqualTo(ORDER_EVENTS_TOPIC);
+        assertThat(record.topic()).isEqualTo(ORDER_CREATED_TOPIC);
         assertThat(record.key()).isEqualTo(event.getAggregateId());
         assertThat(record.value()).isEqualTo(event.getPayload());
         assertThat(headerValue(record, "outbox-event-id")).isEqualTo(event.getId().toString());

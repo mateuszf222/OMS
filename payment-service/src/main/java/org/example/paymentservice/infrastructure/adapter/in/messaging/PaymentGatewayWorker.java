@@ -28,7 +28,7 @@ public class PaymentGatewayWorker {
     private final ObjectMapper objectMapper;
     private final RedisMessageDeduplicator messageDeduplicator;
 
-    @KafkaListener(topics = "payment-initiated-events", groupId = "payment-gateway-worker")
+    @KafkaListener(topics = "#{@kafkaTopicsProperties.paymentInitiatedEvents}", groupId = "payment-gateway-worker")
     public void initiateExternalPaymentAfterPaymentRequested(
             String payload,
             @Header(name = MessageDeduplicationKey.OUTBOX_EVENT_ID_HEADER, required = false) byte[] outboxEventIdHeader,

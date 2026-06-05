@@ -3,6 +3,7 @@ package org.example.paymentservice.infrastructure.adapter.out.messaging;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.example.paymentservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaEntity;
 import org.example.paymentservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaRepository;
+import org.example.paymentservice.infrastructure.config.kafka.KafkaTopicsProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,7 +27,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class OutboxMessageRelayTest {
 
-    private static final String PAYMENT_COMPLETED_EVENTS_TOPIC = "payment-completed-events";
+    private static final String PAYMENT_COMPLETED_TOPIC = "payment.payment-events.completed.v1";
 
     @Mock
     private OutboxEventJpaRepository outboxRepository;
@@ -34,21 +35,25 @@ class OutboxMessageRelayTest {
     @Mock
     private KafkaTemplate<String, String> kafkaTemplate;
 
+    @Mock
+    private KafkaTopicsProperties topics;
+
     @Test
     @SuppressWarnings("unchecked")
     void shouldPublishOutboxEventAndMarkItAsProcessed() {
         OutboxEventJpaEntity event = outboxEvent();
         when(outboxRepository.findTop50PendingMessages()).thenReturn(List.of(event));
+        when(topics.getPaymentCompletedEvents()).thenReturn(PAYMENT_COMPLETED_TOPIC);
         stubKafkaSend();
 
-        new OutboxMessageRelay(outboxRepository, kafkaTemplate).publishPendingOutboxMessages();
+        new OutboxMessageRelay(outboxRepository, kafkaTemplate, topics).publishPendingOutboxMessages();
 
         ArgumentCaptor<ProducerRecord<String, String>> recordCaptor = ArgumentCaptor.forClass(ProducerRecord.class);
         verify(kafkaTemplate).send(recordCaptor.capture());
         verify(outboxRepository).save(event);
 
         ProducerRecord<String, String> record = recordCaptor.getValue();
-        assertThat(record.topic()).isEqualTo(PAYMENT_COMPLETED_EVENTS_TOPIC);
+        assertThat(record.topic()).isEqualTo(PAYMENT_COMPLETED_TOPIC);
         assertThat(record.key()).isEqualTo(event.getAggregateId());
         assertThat(record.value()).isEqualTo(event.getPayload());
         assertThat(headerValue(record, "outbox-event-id")).isEqualTo(event.getId().toString());

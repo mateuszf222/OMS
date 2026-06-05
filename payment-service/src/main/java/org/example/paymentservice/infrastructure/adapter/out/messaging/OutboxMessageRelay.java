@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.example.paymentservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaEntity;
 import org.example.paymentservice.infrastructure.adapter.out.persistence.outbox.OutboxEventJpaRepository;
+import org.example.paymentservice.infrastructure.config.kafka.KafkaTopicsProperties;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -12,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Component
@@ -22,14 +22,9 @@ public class OutboxMessageRelay {
     private static final String OUTBOX_EVENT_ID_HEADER = "outbox-event-id";
     private static final String OUTBOX_EVENT_TYPE_HEADER = "outbox-event-type";
 
-    private static final Map<String, String> EVENT_TOPIC_MAP = Map.of(
-            "PaymentInitiatedEvent", "payment-initiated-events",
-            "PaymentCompletedEvent", "payment-completed-events",
-            "PaymentFailedEvent", "payment-failed-events"
-    );
-
     private final OutboxEventJpaRepository outboxRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTopicsProperties topics;
 
     @Scheduled(fixedDelay = 5000)
     @Transactional
@@ -37,7 +32,7 @@ public class OutboxMessageRelay {
         List<OutboxEventJpaEntity> pendingOutboxMessages = outboxRepository.findTop50PendingMessages();
 
         for (OutboxEventJpaEntity event : pendingOutboxMessages) {
-            String topic = EVENT_TOPIC_MAP.get(event.getEventType());
+            String topic = topicFor(event.getEventType());
 
             if (topic == null || topic.isBlank()) {
                 log.error(
@@ -63,6 +58,15 @@ public class OutboxMessageRelay {
                 );
             }
         }
+    }
+
+    private String topicFor(String eventType) {
+        return switch (eventType) {
+            case "PaymentInitiatedEvent" -> topics.getPaymentInitiatedEvents();
+            case "PaymentCompletedEvent" -> topics.getPaymentCompletedEvents();
+            case "PaymentFailedEvent" -> topics.getPaymentFailedEvents();
+            default -> null;
+        };
     }
 
     private void publishOutboxMessage(String topic, OutboxEventJpaEntity event) {

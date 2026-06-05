@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "spring.kafka.topics")
 public class KafkaTopicsProperties {
     private String orderEvents;
+    private String paymentInitiatedEvents;
     private String paymentCompletedEvents;
     private String paymentFailedEvents;
     private Groups groups;

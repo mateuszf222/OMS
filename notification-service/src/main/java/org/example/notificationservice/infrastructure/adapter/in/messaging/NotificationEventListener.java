@@ -19,12 +19,15 @@ public class NotificationEventListener {
     private static final String ORDER_CREATED_EVENT = "OrderCreatedEvent";
     private static final String PAYMENT_COMPLETED_EVENT = "PaymentCompletedEvent";
     private static final String PAYMENT_FAILED_EVENT = "PaymentFailedEvent";
+    private static final String ORDER_CREATED_TOPIC = "order.order-events.created.v1";
+    private static final String PAYMENT_COMPLETED_TOPIC = "payment.payment-events.completed.v1";
+    private static final String PAYMENT_FAILED_TOPIC = "payment.payment-events.failed.v1";
 
     private final SendNotificationUseCase notificationUseCase;
     private final ObjectMapper objectMapper;
     private final RedisMessageDeduplicator messageDeduplicator;
 
-    @KafkaListener(topics = "order-events", groupId = "notification-service-group")
+    @KafkaListener(topics = ORDER_CREATED_TOPIC, groupId = "notification-service-group")
     public void sendNotificationAfterOrderCreated(
             String payload,
             @Header(name = MessageDeduplicationKey.OUTBOX_EVENT_ID_HEADER, required = false) byte[] outboxEventIdHeader,
@@ -39,7 +42,7 @@ public class NotificationEventListener {
         sendNotificationIdempotently(event, payload, OutboxEventId.fromKafkaHeader(outboxEventIdHeader), acknowledgment);
     }
 
-    @KafkaListener(topics = "payment-completed-events", groupId = "notification-service-group")
+    @KafkaListener(topics = PAYMENT_COMPLETED_TOPIC, groupId = "notification-service-group")
     public void sendNotificationAfterPaymentCompleted(
             String payload,
             @Header(name = MessageDeduplicationKey.OUTBOX_EVENT_ID_HEADER, required = false) byte[] outboxEventIdHeader,
@@ -54,7 +57,7 @@ public class NotificationEventListener {
         sendNotificationIdempotently(event, payload, OutboxEventId.fromKafkaHeader(outboxEventIdHeader), acknowledgment);
     }
 
-    @KafkaListener(topics = "payment-failed-events", groupId = "notification-service-group")
+    @KafkaListener(topics = PAYMENT_FAILED_TOPIC, groupId = "notification-service-group")
     public void sendNotificationAfterPaymentFailed(
             String payload,
             @Header(name = MessageDeduplicationKey.OUTBOX_EVENT_ID_HEADER, required = false) byte[] outboxEventIdHeader,
