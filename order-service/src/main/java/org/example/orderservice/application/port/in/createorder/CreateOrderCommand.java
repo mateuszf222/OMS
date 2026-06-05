@@ -1,7 +1,5 @@
 package org.example.orderservice.application.port.in.createorder;
 
-import java.math.BigDecimal;
-import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,8 +9,6 @@ public record CreateOrderCommand(
 ) {
     public record OrderItemCommand(
             UUID productId,
-            int quantity,
-            BigDecimal price,
-            Currency currency
+            int quantity
     ) {}
 }

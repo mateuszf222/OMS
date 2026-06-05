@@ -1,23 +1,22 @@
 package org.example.orderservice.domain.model.test;
 
-import org.example.orderservice.domain.model.builder.OrderStateBuilder;
-
-import org.example.orderservice.domain.model.builder.OrderBuilder;
-
-import org.example.orderservice.domain.model.assertion.OrderExceptionAssert;
-
-import org.example.orderservice.domain.model.assertion.OrderAssert;
-
-import org.example.orderservice.domain.model.OrderState;
-
-import org.example.orderservice.domain.model.Order;
-
-import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
+import org.example.orderservice.domain.cancellation.CustomerCancellationReason;
+import org.example.orderservice.domain.cancellation.PaymentFailureCancellationReason;
+import org.example.orderservice.domain.event.OrderCancelledByCustomerEvent;
+import org.example.orderservice.domain.event.OrderCancelledDueToPaymentFailureEvent;
 import org.example.orderservice.domain.exception.InvalidOrderStateTransitionException;
 import org.example.orderservice.domain.exception.OrderMustContainProductsException;
+import org.example.orderservice.domain.model.Order;
+import org.example.orderservice.domain.model.OrderState;
+import org.example.orderservice.domain.model.assertion.OrderAssert;
+import org.example.orderservice.domain.model.assertion.OrderExceptionAssert;
+import org.example.orderservice.domain.model.builder.OrderBuilder;
+import org.example.orderservice.domain.model.builder.OrderStateBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.example.orderservice.domain.model.OrderStatus.CANCELLED;
@@ -30,7 +29,7 @@ class OrderTest {
     private static final String CANCEL_ACTION = "cancel order";
 
     @Test
-    @DisplayName("powinien potwierdzić płatność dla nowo utworzonego zamówienia")
+    @DisplayName("should confirm a newly created order after successful payment")
     void shouldConfirmOrderAfterSuccessfulPayment() {
         Order order = OrderBuilder.anOrder().build();
         order.pullDomainEvents();
@@ -41,7 +40,7 @@ class OrderTest {
     }
 
     @Test
-    @DisplayName("nie powinien pozwolić na utworzenie zamówienia bez produktów")
+    @DisplayName("should reject creating order without products")
     void shouldThrowExceptionWhenCreatingOrderWithoutItems() {
         assertThatExceptionOfType(OrderMustContainProductsException.class)
                 .isThrownBy(() -> OrderBuilder.anOrder().withoutItems().build())
@@ -75,7 +74,7 @@ class OrderTest {
         @DisplayName("should throw exception when order is cancelled")
         void shouldThrowWhenOrderIsCancelled() {
             Order order = OrderBuilder.anOrder().build();
-            order.cancelWithReason("Brak wpłaty");
+            order.cancelByCustomer(new CustomerCancellationReason("No payment"));
 
             assertThatExceptionOfType(InvalidOrderStateTransitionException.class)
                     .isThrownBy(order::applySuccessfulPayment)
@@ -95,29 +94,33 @@ class OrderTest {
     class CancelOrder {
 
         @Test
-        @DisplayName("should cancel pending order and emit event")
-        void shouldCancelPendingOrder() {
+        @DisplayName("should cancel pending order due to payment failure and emit explicit event")
+        void shouldCancelPendingOrderDueToPaymentFailure() {
             Order order = OrderBuilder.anOrder().build();
             order.pullDomainEvents();
 
-            order.cancelWithReason("Brak wpłaty w terminie 15 minut");
+            order.cancelDueToPaymentFailure(
+                    UUID.randomUUID(),
+                    new PaymentFailureCancellationReason("Payment timeout")
+            );
 
             OrderAssert.assertThat(order)
                     .isCancelled()
-                    .emittedEvent(OrderCancelledDomainEvent.class);
+                    .emittedEvent(OrderCancelledDueToPaymentFailureEvent.class);
         }
 
         @Test
-        @DisplayName("should allow cancelling confirmed order")
-        void shouldAllowCancellingConfirmedOrder() {
+        @DisplayName("should allow customer cancellation for confirmed order")
+        void shouldAllowCustomerCancellationForConfirmedOrder() {
             Order order = OrderBuilder.anOrder().build();
             order.pullDomainEvents();
             order.applySuccessfulPayment();
 
-            order.cancelWithReason("Rezygnacja klienta");
+            order.cancelByCustomer(new CustomerCancellationReason("Customer resigned"));
 
             OrderAssert.assertThat(order)
                     .isCancelled()
+                    .emittedEvent(OrderCancelledByCustomerEvent.class)
                     .emittedCancellationFrom(CONFIRMED);
         }
 
@@ -125,10 +128,10 @@ class OrderTest {
         @DisplayName("should throw exception when order is already cancelled")
         void shouldThrowWhenAlreadyCancelled() {
             Order order = OrderBuilder.anOrder().build();
-            order.cancelWithReason("Powód 1");
+            order.cancelByCustomer(new CustomerCancellationReason("Reason 1"));
 
             assertThatExceptionOfType(InvalidOrderStateTransitionException.class)
-                    .isThrownBy(() -> order.cancelWithReason("Powód 2"))
+                    .isThrownBy(() -> order.cancelByCustomer(new CustomerCancellationReason("Reason 2")))
                     .satisfies(ex -> OrderExceptionAssert.assertThat(ex)
                             .hasCurrentStatus(CANCELLED)
                             .hasTargetStatus(CANCELLED)
@@ -141,7 +144,7 @@ class OrderTest {
     }
 
     @Test
-    @DisplayName("powinien odtworzyć zamówienie z zapisanego stanu bez generowania zdarzeń domenowych")
+    @DisplayName("should restore order from saved state without emitting domain events")
     void shouldRestoreOrderFromStateWithoutEmittingEvents() {
         OrderState savedState = OrderStateBuilder.anOrderState()
                 .withStatus(CONFIRMED)
@@ -157,4 +160,3 @@ class OrderTest {
                 .hasNoDomainEvents();
     }
 }
-

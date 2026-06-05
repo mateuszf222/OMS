@@ -2,14 +2,13 @@ package org.example.orderservice.application.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.orderservice.application.port.in.cancelorder.CancelOrderCommand;
-import org.example.orderservice.application.port.in.cancelorder.CancelOrderUseCase;
+import org.example.orderservice.application.exception.OrderNotFoundException;
 import org.example.orderservice.application.port.in.completepayment.CompletePaymentCommand;
 import org.example.orderservice.application.port.in.completepayment.CompletePaymentUseCase;
 import org.example.orderservice.application.port.in.createorder.CreateOrderCommand;
 import org.example.orderservice.application.port.in.createorder.CreateOrderUseCase;
 import org.example.orderservice.application.port.out.OrderRepository;
-import org.example.orderservice.application.exception.OrderNotFoundException;
+import org.example.orderservice.application.port.out.ProductPriceCatalog;
 import org.example.orderservice.domain.model.Money;
 import org.example.orderservice.domain.model.Order;
 import org.example.orderservice.domain.model.OrderItem;
@@ -24,21 +23,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderCommandService implements
         CreateOrderUseCase,
-        CancelOrderUseCase,
         CompletePaymentUseCase {
 
     private final OrderRepository orderRepository;
+    private final ProductPriceCatalog productPriceCatalog;
 
     @Override
     @Transactional
     public UUID createOrder(CreateOrderCommand command) {
         List<OrderItem> domainItems = command.items().stream()
-                .map(item -> new OrderItem(
-                        UUID.randomUUID(),
-                        item.productId(),
-                        item.quantity(),
-                        new Money(item.price(), item.currency())
-                ))
+                .map(this::pricedOrderItem)
                 .toList();
 
         Order order = Order.create(command.customerId(), domainItems);
@@ -54,8 +48,7 @@ public class OrderCommandService implements
         log.debug("Attempting to complete payment for order: {} using paymentId: {}",
                 command.orderId(), command.paymentId());
 
-        Order order = orderRepository.findById(command.orderId())
-                .orElseThrow(() -> new OrderNotFoundException(command.orderId()));
+        Order order = findOrder(command.orderId());
 
         order.applySuccessfulPayment();
         orderRepository.save(order);
@@ -63,17 +56,19 @@ public class OrderCommandService implements
         log.info("Order {} confirmed after successful payment.", command.orderId());
     }
 
-    @Override
-    @Transactional
-    public void cancelOrder(CancelOrderCommand command) {
-        log.debug("Attempting to cancel order: {} with reason: {}", command.orderId(), command.reason());
+    private OrderItem pricedOrderItem(CreateOrderCommand.OrderItemCommand item) {
+        Money trustedUnitPrice = productPriceCatalog.priceFor(item.productId());
 
-        Order order = orderRepository.findById(command.orderId())
-                .orElseThrow(() -> new OrderNotFoundException(command.orderId()));
+        return new OrderItem(
+                UUID.randomUUID(),
+                item.productId(),
+                item.quantity(),
+                trustedUnitPrice
+        );
+    }
 
-        order.cancelWithReason(command.reason());
-        orderRepository.save(order);
-
-        log.info("Order {} cancelled with reason: {}", command.orderId(), command.reason());
+    private Order findOrder(UUID orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
     }
 }

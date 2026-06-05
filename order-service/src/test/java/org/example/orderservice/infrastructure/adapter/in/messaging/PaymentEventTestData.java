@@ -1,7 +1,8 @@
 package org.example.orderservice.infrastructure.adapter.in.messaging;
 
-import org.example.orderservice.application.port.in.cancelorder.CancelOrderCommand;
+import org.example.orderservice.application.port.in.cancelorder.CancelOrderDueToPaymentFailureCommand;
 import org.example.orderservice.application.port.in.completepayment.CompletePaymentCommand;
+import org.example.orderservice.domain.cancellation.PaymentFailureCancellationReason;
 
 import java.util.UUID;
 
@@ -29,8 +30,12 @@ final class PaymentEventTestData {
         return new CompletePaymentCommand(event.orderId(), event.paymentId());
     }
 
-    static CancelOrderCommand cancelOrderCommandFor(PaymentFailedEvent event) {
-        return new CancelOrderCommand(event.orderId(), event.reason());
+    static CancelOrderDueToPaymentFailureCommand cancelOrderCommandFor(PaymentFailedEvent event) {
+        return new CancelOrderDueToPaymentFailureCommand(
+                event.orderId(),
+                event.paymentId(),
+                new PaymentFailureCancellationReason(event.reason())
+        );
     }
 }
 

@@ -1,7 +1,7 @@
 package org.example.orderservice.infrastructure.adapter.in.messaging;
 
-import org.example.orderservice.application.port.in.cancelorder.CancelOrderCommand;
-import org.example.orderservice.application.port.in.cancelorder.CancelOrderUseCase;
+import org.example.orderservice.application.port.in.cancelorder.CancelOrderDueToPaymentFailureCommand;
+import org.example.orderservice.application.port.in.cancelorder.CancelOrderDueToPaymentFailureUseCase;
 import org.example.orderservice.application.port.in.completepayment.CompletePaymentCommand;
 import org.example.orderservice.application.port.in.completepayment.CompletePaymentUseCase;
 import org.example.orderservice.domain.exception.InvalidOrderStateTransitionException;
@@ -38,7 +38,7 @@ class KafkaPaymentEventListenerTest {
     private CompletePaymentUseCase completePaymentUseCase;
 
     @Mock
-    private CancelOrderUseCase cancelOrderUseCase;
+    private CancelOrderDueToPaymentFailureUseCase cancelOrderDueToPaymentFailureUseCase;
 
     @Mock
     private Acknowledgment acknowledgment;
@@ -100,12 +100,13 @@ class KafkaPaymentEventListenerTest {
         PaymentFailedEvent event = paymentFailedBecauseLimitExceeded();
         messageClaimWillBeAccepted();
 
-        listener.cancelOrderAfterPaymentFailed(event, null, acknowledgment);
+        listener.cancelOrderDueToPaymentFailure(event, null, acknowledgment);
 
-        ArgumentCaptor<CancelOrderCommand> commandCaptor = ArgumentCaptor.forClass(CancelOrderCommand.class);
-        verify(cancelOrderUseCase).cancelOrder(commandCaptor.capture());
+        ArgumentCaptor<CancelOrderDueToPaymentFailureCommand> commandCaptor =
+                ArgumentCaptor.forClass(CancelOrderDueToPaymentFailureCommand.class);
+        verify(cancelOrderDueToPaymentFailureUseCase).cancelOrderDueToPaymentFailure(commandCaptor.capture());
         assertThat(commandCaptor.getValue()).isEqualTo(cancelOrderCommandFor(event));
-        assertThat(commandCaptor.getValue().reason()).isEqualTo(LIMIT_EXCEEDED);
+        assertThat(commandCaptor.getValue().reason().value()).isEqualTo(LIMIT_EXCEEDED);
         verify(messageDeduplicator).rememberMessageAsProcessed(any(MessageDeduplicationKey.class));
         verify(acknowledgment).acknowledge();
     }
@@ -127,10 +128,10 @@ class KafkaPaymentEventListenerTest {
         RuntimeException unexpected = new RuntimeException("database unavailable");
         messageClaimWillBeAccepted();
         doThrow(unexpected)
-                .when(cancelOrderUseCase)
-                .cancelOrder(cancelOrderCommandFor(event));
+                .when(cancelOrderDueToPaymentFailureUseCase)
+                .cancelOrderDueToPaymentFailure(cancelOrderCommandFor(event));
 
-        assertThatThrownBy(() -> listener.cancelOrderAfterPaymentFailed(event, null, acknowledgment))
+        assertThatThrownBy(() -> listener.cancelOrderDueToPaymentFailure(event, null, acknowledgment))
                 .isSameAs(unexpected);
 
         verify(messageDeduplicator).releaseMessageClaim(any(MessageDeduplicationKey.class));

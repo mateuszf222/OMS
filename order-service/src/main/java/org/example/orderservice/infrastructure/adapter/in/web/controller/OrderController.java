@@ -2,8 +2,8 @@ package org.example.orderservice.infrastructure.adapter.in.web.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.orderservice.application.port.in.cancelorder.CancelOrderCommand;
-import org.example.orderservice.application.port.in.cancelorder.CancelOrderUseCase;
+import org.example.orderservice.application.port.in.cancelorder.CancelOrderByCustomerCommand;
+import org.example.orderservice.application.port.in.cancelorder.CancelOrderByCustomerUseCase;
 import org.example.orderservice.application.port.in.createorder.CreateOrderCommand;
 import org.example.orderservice.application.port.in.createorder.CreateOrderUseCase;
 import org.example.orderservice.infrastructure.adapter.in.web.dto.cancelorder.CancelOrderRequest;
@@ -26,7 +26,7 @@ import java.util.UUID;
 public class OrderController {
 
     private final CreateOrderUseCase createOrderUseCase;
-    private final CancelOrderUseCase cancelOrderUseCase;
+    private final CancelOrderByCustomerUseCase cancelOrderByCustomerUseCase;
     private final OrderRequestMapper orderRequestMapper;
 
     @PostMapping
@@ -34,7 +34,7 @@ public class OrderController {
             @Valid @RequestBody CreateOrderRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        UUID customerId = UUID.fromString(jwt.getSubject());
+        UUID customerId = customerIdFrom(jwt);
         CreateOrderCommand command = orderRequestMapper.toCreateOrderCommand(customerId, request);
 
         UUID orderId = createOrderUseCase.createOrder(command);
@@ -53,11 +53,13 @@ public class OrderController {
     @PostMapping("/{id}/cancel")
     public ResponseEntity<CancelOrderResponse> cancelOrder(
             @PathVariable("id") UUID orderId,
-            @Valid @RequestBody CancelOrderRequest request) {
+            @Valid @RequestBody CancelOrderRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
 
-        CancelOrderCommand command = orderRequestMapper.toCancelOrderCommand(orderId, request);
+        UUID customerId = customerIdFrom(jwt);
+        CancelOrderByCustomerCommand command = orderRequestMapper.toCancelOrderByCustomerCommand(orderId, customerId, request);
 
-        cancelOrderUseCase.cancelOrder(command);
+        cancelOrderByCustomerUseCase.cancelOrderByCustomer(command);
 
         CancelOrderResponse response = new CancelOrderResponse(
                 orderId,
@@ -66,5 +68,9 @@ public class OrderController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    private UUID customerIdFrom(Jwt jwt) {
+        return UUID.fromString(jwt.getSubject());
     }
 }

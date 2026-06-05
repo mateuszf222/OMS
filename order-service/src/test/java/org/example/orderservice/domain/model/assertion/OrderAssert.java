@@ -7,7 +7,7 @@ import org.example.orderservice.domain.model.Order;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 import org.example.orderservice.domain.event.DomainEvent;
-import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
+import org.example.orderservice.domain.event.OrderCancellationEvent;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -139,7 +139,7 @@ public class OrderAssert extends AbstractAssert<OrderAssert, Order> {
 
         Assertions.assertThat(pullCancellationEvents())
                 .as("order cancellation events")
-                .anySatisfy(event -> Assertions.assertThat(event.reason())
+                .anySatisfy(event -> Assertions.assertThat(event.reason().value())
                         .as("cancellation reason")
                         .isEqualTo(reason));
         return this;
@@ -198,10 +198,10 @@ public class OrderAssert extends AbstractAssert<OrderAssert, Order> {
         return events;
     }
 
-    private List<OrderCancelledDomainEvent> pullCancellationEvents() {
+    private List<OrderCancellationEvent> pullCancellationEvents() {
         return pullDomainEvents().stream()
-                .filter(OrderCancelledDomainEvent.class::isInstance)
-                .map(OrderCancelledDomainEvent.class::cast)
+                .filter(OrderCancellationEvent.class::isInstance)
+                .map(OrderCancellationEvent.class::cast)
                 .toList();
     }
 

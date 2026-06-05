@@ -2,6 +2,7 @@ package org.example.orderservice.infrastructure.adapter.in.web.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.orderservice.application.exception.OrderNotFoundException;
+import org.example.orderservice.application.exception.ProductNotAvailableException;
 import org.example.orderservice.domain.exception.InvalidOrderStateTransitionException;
 import org.example.orderservice.domain.exception.OrderDomainException;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -82,18 +83,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
     }
 
-    @ExceptionHandler(InvalidCurrencyCodeException.class)
-    public ResponseEntity<ProblemDetail> onInvalidCurrency(InvalidCurrencyCodeException ex) {
+    @ExceptionHandler(ProductNotAvailableException.class)
+    public ResponseEntity<ProblemDetail> onProductNotAvailable(ProductNotAvailableException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
+                HttpStatus.UNPROCESSABLE_ENTITY,
                 ex.getMessage()
         );
-        problem.setTitle("Invalid Currency Code");
+        problem.setTitle("Product Not Available");
         problem.setType(URI.create("about:blank"));
         problem.setProperty("timestamp", Instant.now());
 
-        log.warn("Invalid currency requested: {}", ex.getCurrencyCode());
-        return ResponseEntity.badRequest().body(problem);
+        log.warn("Unavailable product requested: {}", ex.getProductId());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem);
     }
 
     @ExceptionHandler(OrderDomainException.class)

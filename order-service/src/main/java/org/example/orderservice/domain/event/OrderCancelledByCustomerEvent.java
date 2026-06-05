@@ -1,13 +1,14 @@
 package org.example.orderservice.domain.event;
 
+import org.example.orderservice.domain.cancellation.CustomerCancellationReason;
 import org.example.orderservice.domain.model.OrderStatus;
 
 import java.util.UUID;
 
-public record OrderCancelledDomainEvent(
+public record OrderCancelledByCustomerEvent(
         UUID orderId,
         UUID customerId,
-        String reason,
+        CustomerCancellationReason reason,
         OrderStatus previousStatus
-) implements DomainEvent {
+) implements OrderCancellationEvent {
 }

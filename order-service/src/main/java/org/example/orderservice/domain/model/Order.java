@@ -2,8 +2,14 @@ package org.example.orderservice.domain.model;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+
+import org.example.orderservice.domain.cancellation.AdminCancellationReason;
+import org.example.orderservice.domain.cancellation.CustomerCancellationReason;
+import org.example.orderservice.domain.cancellation.PaymentFailureCancellationReason;
 import org.example.orderservice.domain.event.DomainEvent;
-import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
+import org.example.orderservice.domain.event.OrderCancelledByAdminEvent;
+import org.example.orderservice.domain.event.OrderCancelledByCustomerEvent;
+import org.example.orderservice.domain.event.OrderCancelledDueToPaymentFailureEvent;
 import org.example.orderservice.domain.event.OrderCreatedDomainEvent;
 import org.example.orderservice.domain.exception.CustomerRequiredForOrderException;
 import org.example.orderservice.domain.exception.InvalidOrderStateTransitionException;
@@ -71,11 +77,42 @@ public class Order {
         transitionTo(PAID_STATUS, APPLY_SUCCESSFUL_PAYMENT_ACTION);
     }
 
-    public void cancelWithReason(String reason) {
+    public void cancelByCustomer(CustomerCancellationReason reason) {
         OrderStatus statusBeforeCancellation = this.status;
 
         transitionTo(CANCELLED_STATUS, CANCEL_ORDER_ACTION);
-        recordOrderCancelled(reason, statusBeforeCancellation);
+        record(new OrderCancelledByCustomerEvent(
+                id,
+                customerId,
+                reason,
+                statusBeforeCancellation
+        ));
+    }
+
+    public void cancelByAdmin(UUID adminId, AdminCancellationReason reason) {
+        OrderStatus statusBeforeCancellation = this.status;
+
+        transitionTo(CANCELLED_STATUS, CANCEL_ORDER_ACTION);
+        record(new OrderCancelledByAdminEvent(
+                id,
+                customerId,
+                adminId,
+                reason,
+                statusBeforeCancellation
+        ));
+    }
+
+    public void cancelDueToPaymentFailure(UUID paymentId, PaymentFailureCancellationReason reason) {
+        OrderStatus statusBeforeCancellation = this.status;
+
+        transitionTo(CANCELLED_STATUS, CANCEL_ORDER_ACTION);
+        record(new OrderCancelledDueToPaymentFailureEvent(
+                id,
+                customerId,
+                paymentId,
+                reason,
+                statusBeforeCancellation
+        ));
     }
 
     public Money totalAmount() {
@@ -106,15 +143,6 @@ public class Order {
                 id,
                 customerId,
                 totalAmount()
-        ));
-    }
-
-    private void recordOrderCancelled(String reason, OrderStatus statusBeforeCancellation) {
-        record(new OrderCancelledDomainEvent(
-                id,
-                customerId,
-                reason,
-                statusBeforeCancellation
         ));
     }
 

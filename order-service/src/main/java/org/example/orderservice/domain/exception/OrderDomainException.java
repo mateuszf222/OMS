@@ -4,6 +4,7 @@ public abstract sealed class OrderDomainException extends DomainException permit
         CustomerRequiredForOrderException,
         InvalidMoneyOperationException,
         InvalidOrderItemException,
+        MissingCancellationReasonException,
         OrderLineCannotBeNullException,
         OrderItemsMustUseSameCurrencyException,
         OrderMustContainProductsException {

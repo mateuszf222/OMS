@@ -2,9 +2,10 @@ package org.example.orderservice;
 
 import org.example.orderservice.infrastructure.adapter.in.web.dto.createorder.CreateOrderRequest;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+
+import static org.example.orderservice.infrastructure.adapter.out.pricing.InMemoryProductPriceCatalog.STANDARD_PRODUCT_ID;
 
 final class OrderApiTestData {
 
@@ -25,10 +26,8 @@ final class OrderApiTestData {
     static CreateOrderRequest createOrderRequestWithSinglePlnItem() {
         return new CreateOrderRequest(
                 List.of(new CreateOrderRequest.OrderItemRequest(
-                        UUID.randomUUID(),
-                        2,
-                        new BigDecimal("150.00"),
-                        PLN
+                        STANDARD_PRODUCT_ID,
+                        2
                 ))
         );
     }

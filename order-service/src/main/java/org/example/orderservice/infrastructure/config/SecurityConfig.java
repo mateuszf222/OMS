@@ -29,6 +29,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/cancel").hasRole("USER")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

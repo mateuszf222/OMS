@@ -1,6 +1,7 @@
 package org.example.orderservice.infrastructure.adapter.in.web.exception;
 
 import org.example.orderservice.application.exception.OrderNotFoundException;
+import org.example.orderservice.application.exception.ProductNotAvailableException;
 import org.example.orderservice.domain.exception.InvalidOrderStateTransitionException;
 import org.example.orderservice.domain.exception.OrderMustContainProductsException;
 import org.example.orderservice.domain.model.OrderStatus;
@@ -62,15 +63,16 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void shouldReturnBadRequestForInvalidCurrencyCode() {
-        ResponseEntity<ProblemDetail> response = handler.onInvalidCurrency(new InvalidCurrencyCodeException("XYZ123"));
+    void shouldReturnUnprocessableEntityForUnavailableProduct() {
+        ResponseEntity<ProblemDetail> response =
+                handler.onProductNotAvailable(new ProductNotAvailableException(UUID.randomUUID()));
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
         assertThat(response.getBody())
                 .isNotNull()
                 .satisfies(problem -> {
-                    assertThat(problem.getTitle()).isEqualTo("Invalid Currency Code");
-                    assertThat(problem.getDetail()).contains("XYZ123");
+                    assertThat(problem.getTitle()).isEqualTo("Product Not Available");
+                    assertThat(problem.getDetail()).contains("not available");
                 });
     }
 }

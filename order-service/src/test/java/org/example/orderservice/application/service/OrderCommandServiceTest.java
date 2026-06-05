@@ -1,13 +1,11 @@
 package org.example.orderservice.application.service;
 
-import org.example.orderservice.application.port.in.createorder.CreateOrderCommand;
-import org.example.orderservice.application.port.in.completepayment.CompletePaymentCommand;
-import org.example.orderservice.application.port.in.cancelorder.CancelOrderCommand;
+import org.example.orderservice.application.exception.OrderNotFoundException;
+import org.example.orderservice.application.exception.ProductNotAvailableException;
 import org.example.orderservice.application.port.out.OrderRepository;
-import org.example.orderservice.domain.event.OrderCancelledDomainEvent;
+import org.example.orderservice.application.port.out.ProductPriceCatalog;
 import org.example.orderservice.domain.event.OrderCreatedDomainEvent;
 import org.example.orderservice.domain.exception.OrderItemsMustUseSameCurrencyException;
-import org.example.orderservice.application.exception.OrderNotFoundException;
 import org.example.orderservice.domain.model.Order;
 import org.example.orderservice.domain.model.assertion.OrderAssert;
 import org.example.orderservice.domain.model.builder.OrderBuilder;
@@ -20,10 +18,23 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Currency;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.example.orderservice.application.service.OrderCommandTestData.*;
+import static org.example.orderservice.application.service.OrderCommandTestData.SECOND_PRODUCT_ID;
+import static org.example.orderservice.application.service.OrderCommandTestData.STANDARD_PRODUCT_ID;
+import static org.example.orderservice.application.service.OrderCommandTestData.UNKNOWN_PRODUCT_ID;
+import static org.example.orderservice.application.service.OrderCommandTestData.createOrderWithMixedCurrencies;
+import static org.example.orderservice.application.service.OrderCommandTestData.createOrderWithTwoPlnItems;
+import static org.example.orderservice.application.service.OrderCommandTestData.createOrderWithUnavailableProduct;
+import static org.example.orderservice.application.service.OrderCommandTestData.customerId;
+import static org.example.orderservice.application.service.OrderCommandTestData.money;
+import static org.example.orderservice.application.service.OrderCommandTestData.orderId;
+import static org.example.orderservice.application.service.OrderCommandTestData.paymentCompletedFor;
+import static org.example.orderservice.domain.model.data.OrderTestData.EUR;
+import static org.example.orderservice.domain.model.data.OrderTestData.PLN;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -36,6 +47,9 @@ class OrderCommandServiceTest {
     @Mock
     private OrderRepository orderRepository;
 
+    @Mock
+    private ProductPriceCatalog productPriceCatalog;
+
     @InjectMocks
     private OrderCommandService service;
 
@@ -47,9 +61,11 @@ class OrderCommandServiceTest {
         void shouldCreatePendingOrderAndPersistIt() {
             when(orderRepository.save(any(Order.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
+            productPriceWillBe(STANDARD_PRODUCT_ID, "25.00", PLN);
+            productPriceWillBe(SECOND_PRODUCT_ID, "50.00", PLN);
 
             var customerId = customerId();
-            CreateOrderCommand command = createOrderWithTwoPlnItems(customerId);
+            var command = createOrderWithTwoPlnItems(customerId);
 
             var createdOrderId = service.createOrder(command);
 
@@ -69,11 +85,27 @@ class OrderCommandServiceTest {
 
         @Test
         void shouldRejectOrderWithMixedCurrencies() {
-            CreateOrderCommand command = createOrderWithMixedCurrencies(customerId());
+            productPriceWillBe(STANDARD_PRODUCT_ID, "10.00", PLN);
+            productPriceWillBe(SECOND_PRODUCT_ID, "10.00", EUR);
+
+            var command = createOrderWithMixedCurrencies(customerId());
 
             assertThatExceptionOfType(OrderItemsMustUseSameCurrencyException.class)
                     .isThrownBy(() -> service.createOrder(command))
                     .withMessageContaining("tej samej walucie");
+
+            verify(orderRepository, never()).save(any());
+        }
+
+        @Test
+        void shouldRejectUnavailableProductBeforePersistingOrder() {
+            when(productPriceCatalog.priceFor(UNKNOWN_PRODUCT_ID))
+                    .thenThrow(new ProductNotAvailableException(UNKNOWN_PRODUCT_ID));
+
+            var command = createOrderWithUnavailableProduct(customerId());
+
+            assertThatExceptionOfType(ProductNotAvailableException.class)
+                    .isThrownBy(() -> service.createOrder(command));
 
             verify(orderRepository, never()).save(any());
         }
@@ -108,29 +140,7 @@ class OrderCommandServiceTest {
         }
     }
 
-    @Nested
-    @DisplayName("cancelOrder")
-    class CancelOrder {
-
-        @Test
-        void shouldCancelOrderWithReasonFromPaymentFailedEvent() {
-            Order order = OrderBuilder.anOrder().build();
-            order.pullDomainEvents();
-
-            when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-
-            CancelOrderCommand command = paymentRejectedByBankFor(order.getId());
-
-            service.cancelOrder(command);
-
-            ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
-            verify(orderRepository).save(captor.capture());
-
-            OrderAssert.assertThat(captor.getValue())
-                    .isCancelled()
-                    .emittedEvent(OrderCancelledDomainEvent.class)
-                    .emittedCancellationBecause(REJECTED_BY_BANK);
-        }
+    private void productPriceWillBe(UUID productId, String amount, Currency currency) {
+        when(productPriceCatalog.priceFor(productId)).thenReturn(money(amount, currency));
     }
 }
-
