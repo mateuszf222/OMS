@@ -1,0 +1,43 @@
+name: drift
+
+# Warstwa 3 (API-SPEC-1): czy kod faktycznie zgadza się z kontraktem źródłowym (spec-first).
+# Zrzuca OpenAPI ze springdoc (przez test na Testcontainers) i porównuje z docs/contracts/.
+on:
+  pull_request:
+    paths:
+      - "order-service/**"
+      - "docs/contracts/openapi/order-service.v1.yaml"
+      - "docs/contracts/openapi/_shared/**"
+      - "docs/contracts/data-contracts/**"
+
+jobs:
+  drift-order-service:
+    name: Drift kod<->kontrakt (order-service)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Zrzut OpenAPI ze springdoc (Testcontainers)
+        working-directory: order-service
+        run: mvn -B -ntp test -Dtest=OpenApiSpecDumpTest
+
+      - name: Bundle kontraktu źródłowego (rozwiązanie $ref)
+        run: npx --yes @redocly/cli@1 bundle docs/contracts/openapi/order-service.v1.yaml -o contract.json
+
+      - name: Drift (oasdiff: kod -> kontrakt)
+        # base = kod (springdoc), revision = kontrakt. "breaking" tu = kontrakt usuwa/zmienia coś,
+        # co kod wystawia => kod wystawia coś spoza/sprzecznego z kontraktem (FAIL). Endpointy
+        # PLANOWANY w kontrakcie = dodatki = nie-breaking = OK (kod ich jeszcze nie ma).
+        run: |
+          docker run --rm -v "$PWD:/w" -w /w oasdiff/oasdiff breaking \
+            /w/order-service/target/generated-openapi/order-service.openapi.json \
+            /w/contract.json \
+            --fail-on ERR --exclude-elements examples,description

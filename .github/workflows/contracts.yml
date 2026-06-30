@@ -1,0 +1,74 @@
+name: contracts
+
+# Bramka kontraktów:
+#  - spectral : lint reguł API-*/EVT-* (06/07) + walidacja strukturalna.
+#  - breaking : zmiany łamiące bez podniesienia wersji — OpenAPI (oasdiff) i AsyncAPI (własny skrypt).
+on:
+  push:
+    paths: ["docs/contracts/**"]
+  pull_request:
+    paths: ["docs/contracts/**"]
+
+jobs:
+  spectral:
+    name: Lint (Spectral)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs/contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install --no-audit --no-fund
+      - run: npm run lint
+
+  breaking:
+    name: Breaking-change (oasdiff + asyncapi)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout rewizji (PR)
+        uses: actions/checkout@v4
+        with:
+          path: revision
+      - name: Checkout gałęzi bazowej
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Narzędzia kontraktów (rewizja)
+        working-directory: revision/docs/contracts
+        run: npm install --no-audit --no-fund
+
+      - name: OpenAPI breaking (oasdiff)
+        # Obraz oasdiff można przypiąć do wersji (np. oasdiff/oasdiff:1.x) dla powtarzalności.
+        run: |
+          set -u
+          BROKEN=0
+          for f in revision/docs/contracts/openapi/*.v1.yaml; do
+            name=$(basename "$f")
+            base_spec="base/docs/contracts/openapi/$name"
+            [ -f "$base_spec" ] || { echo "::notice::Nowy spec $name — brak wersji bazowej, pomijam."; continue; }
+            echo "== oasdiff breaking: $name =="
+            docker run --rm -v "$PWD:/w" -w /w oasdiff/oasdiff breaking \
+              "/w/$base_spec" "/w/$f" --fail-on ERR || BROKEN=1
+          done
+          [ "$BROKEN" -eq 0 ] || { echo "::error::OpenAPI: zmiana łamiąca bez podniesienia wersji (API-VER-1). Utwórz openapi/<svc>.vN+1.yaml."; exit 1; }
+
+      - name: AsyncAPI breaking (events)
+        run: |
+          set -u
+          BROKEN=0
+          for f in revision/docs/contracts/events/*.v1.yaml; do
+            name=$(basename "$f")
+            base_spec="base/docs/contracts/events/$name"
+            [ -f "$base_spec" ] || { echo "::notice::Nowy event-spec $name — pomijam."; continue; }
+            echo "== asyncapi breaking: $name =="
+            node revision/docs/contracts/scripts/asyncapi-breaking.mjs "$base_spec" "$f" || BROKEN=1
+          done
+          [ "$BROKEN" -eq 0 ] || { echo "::error::AsyncAPI: zmiana łamiąca bez podniesienia wersji (EVT-VER-1). Utwórz events/<domena>.vN+1.yaml."; exit 1; }
