@@ -1,0 +1,201 @@
+# OpenAPI 3.1 — Order Service. Spec-first (06 §13, API-SPEC-1).
+# Reguły: 06-api-contracts.md. Mechanika: ./_shared/. Kanon domeny: ../data-contracts/.
+# Status operacji w rozszerzeniu x-status (AKTUALNY = kod istnieje; PLANOWANY = brak kodu).
+openapi: 3.1.0
+info:
+  title: Order Service API
+  version: 1.0.0
+  description: |
+    Synchroniczne API order-service. Ceny wyznacza serwer z zaufanego katalogu (API-SEC-1) —
+    żądania NIE zawierają kwot. Mutacje wymagają Idempotency-Key (API-IDEM-1).
+servers:
+  - url: /
+    description: Dostęp przez api-gateway; pełne ścieżki zawierają /api/v1.
+security:
+  - bearerAuth: []
+tags:
+  - name: orders
+  - name: orders-admin
+paths:
+  /api/v1/orders:
+    post:
+      tags: [orders]
+      operationId: createOrder
+      summary: Utwórz zamówienie
+      x-status: AKTUALNY
+      x-required-role: ROLE_USER
+      description: Tworzy zamówienie w statusie PENDING. Bez kwot w żądaniu (API-SEC-1).
+      parameters:
+        - $ref: "./_shared/idempotency.yaml#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateOrderRequest" }
+      responses:
+        "201":
+          description: Utworzono.
+          headers:
+            Location:
+              description: URI nowego zamówienia.
+              schema: { type: string, format: uri-reference }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CreateOrderResponse" }
+        "400": { $ref: "./_shared/problem.yaml#/components/responses/ValidationFailed" }
+        "401": { $ref: "./_shared/problem.yaml#/components/responses/Unauthorized" }
+        "409": { $ref: "./_shared/problem.yaml#/components/responses/Conflict" }
+        "422": { $ref: "./_shared/problem.yaml#/components/responses/DomainRuleViolation" }
+        "429": { $ref: "./_shared/problem.yaml#/components/responses/RateLimited" }
+        "500": { $ref: "./_shared/problem.yaml#/components/responses/InternalError" }
+    get:
+      tags: [orders]
+      operationId: listOrders
+      summary: Lista zamówień klienta (paginacja)
+      x-status: PLANOWANY
+      x-required-role: ROLE_USER
+      description: Zwraca wyłącznie zamówienia właściciela tokenu (API-SEC-2).
+      parameters:
+        - $ref: "./_shared/pagination.yaml#/components/parameters/Page"
+        - $ref: "./_shared/pagination.yaml#/components/parameters/Size"
+        - $ref: "./_shared/pagination.yaml#/components/parameters/Sort"
+      responses:
+        "200":
+          description: OK.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderListResponse" }
+        "401": { $ref: "./_shared/problem.yaml#/components/responses/Unauthorized" }
+        "500": { $ref: "./_shared/problem.yaml#/components/responses/InternalError" }
+  /api/v1/orders/{orderId}:
+    get:
+      tags: [orders]
+      operationId: getOrder
+      summary: Szczegóły zamówienia
+      x-status: PLANOWANY
+      x-required-role: ROLE_USER
+      description: Tylko własne zamówienie; dla cudzego zwracamy 404 (API-SEC-2).
+      parameters:
+        - $ref: "#/components/parameters/OrderIdPath"
+      responses:
+        "200":
+          description: OK.
+          content:
+            application/json:
+              schema: { $ref: "../data-contracts/Order.v2.yaml" }
+        "401": { $ref: "./_shared/problem.yaml#/components/responses/Unauthorized" }
+        "404": { $ref: "./_shared/problem.yaml#/components/responses/NotFound" }
+        "500": { $ref: "./_shared/problem.yaml#/components/responses/InternalError" }
+  /api/v1/orders/{orderId}/cancel:
+    post:
+      tags: [orders]
+      operationId: cancelOrderByCustomer
+      summary: Anuluj zamówienie (klient)
+      x-status: AKTUALNY
+      x-required-role: ROLE_USER
+      description: Tylko własne zamówienie (API-SEC-2). Stan końcowy → 409.
+      parameters:
+        - $ref: "#/components/parameters/OrderIdPath"
+        - $ref: "./_shared/idempotency.yaml#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CancelOrderRequest" }
+      responses:
+        "200":
+          description: Anulowano.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CancelOrderResponse" }
+        "400": { $ref: "./_shared/problem.yaml#/components/responses/ValidationFailed" }
+        "401": { $ref: "./_shared/problem.yaml#/components/responses/Unauthorized" }
+        "404": { $ref: "./_shared/problem.yaml#/components/responses/NotFound" }
+        "409": { $ref: "./_shared/problem.yaml#/components/responses/Conflict" }
+        "429": { $ref: "./_shared/problem.yaml#/components/responses/RateLimited" }
+        "500": { $ref: "./_shared/problem.yaml#/components/responses/InternalError" }
+  /api/v1/admin/orders/{orderId}/cancel:
+    post:
+      tags: [orders-admin]
+      operationId: cancelOrderByAdmin
+      summary: Anuluj zamówienie (administrator)
+      x-status: PLANOWANY
+      x-required-role: ROLE_ADMIN
+      description: Podpięcie istniejącego CancelOrderByAdminUseCase (audit API-3).
+      parameters:
+        - $ref: "#/components/parameters/OrderIdPath"
+        - $ref: "./_shared/idempotency.yaml#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CancelOrderRequest" }
+      responses:
+        "200":
+          description: Anulowano.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CancelOrderResponse" }
+        "401": { $ref: "./_shared/problem.yaml#/components/responses/Unauthorized" }
+        "403": { $ref: "./_shared/problem.yaml#/components/responses/Forbidden" }
+        "404": { $ref: "./_shared/problem.yaml#/components/responses/NotFound" }
+        "409": { $ref: "./_shared/problem.yaml#/components/responses/Conflict" }
+        "500": { $ref: "./_shared/problem.yaml#/components/responses/InternalError" }
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: "./_shared/security/security-schemes.yaml#/components/securitySchemes/bearerAuth"
+  parameters:
+    OrderIdPath:
+      name: orderId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    CreateOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      description: Wejście tworzenia zamówienia — BEZ kwot (API-SEC-1).
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/OrderItemRequest" }
+    OrderItemRequest:
+      type: object
+      additionalProperties: false
+      required: [productId, quantity]
+      description: Pozycja wejściowa — tylko co i ile; cena pochodzi z katalogu po stronie serwera.
+      properties:
+        productId: { type: string, format: uuid }
+        quantity: { type: integer, minimum: 1, maximum: 1000 }
+    CreateOrderResponse:
+      type: object
+      additionalProperties: false
+      required: [orderId]
+      properties:
+        orderId: { type: string, format: uuid }
+    CancelOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 500 }
+    CancelOrderResponse:
+      type: object
+      additionalProperties: false
+      required: [orderId, status]
+      properties:
+        orderId: { type: string, format: uuid }
+        status: { type: string, enum: [CANCELLED] }
+        message: { type: string }
+    OrderListResponse:
+      type: object
+      additionalProperties: false
+      required: [content, page]
+      properties:
+        content:
+          type: array
+          items: { $ref: "../data-contracts/Order.v2.yaml" }
+        page: { $ref: "./_shared/pagination.yaml#/components/schemas/PageMetadata" }

@@ -1,0 +1,98 @@
+# AsyncAPI 3.0 — zdarzenia domeny Order. Spec-first (07 §11, EVT-SPEC-1).
+# Reguły: 07-event-contracts.md. Kanon domeny: ../data-contracts/.
+# EVT-TOPIC-1: jeden schemat = jeden topic (osobny kanał dla created i cancelled).
+# Perspektywa producenta (order-service); konsumenci wg inwentarza w 07 §10.
+asyncapi: 3.0.0
+info:
+  title: Order Events
+  version: 1.0.0
+  description: Zdarzenia integracyjne publikowane przez order-service przez Transactional Outbox.
+servers:
+  kafka:
+    host: localhost:9092
+    protocol: kafka
+    description: Broker Apache Kafka (lokalnie).
+channels:
+  orderCreated:
+    address: order.order-events.created.v1
+    description: Utworzenie zamówienia (PENDING).
+    messages:
+      orderCreated:
+        $ref: "#/components/messages/OrderCreatedEvent"
+  orderCancelled:
+    address: order.order-events.cancelled.v1
+    description: Anulowanie zamówienia. Osobny topic (NAPRAWA audit B1 — nie na topic 'created').
+    messages:
+      orderCancelled:
+        $ref: "#/components/messages/OrderCancelledEvent"
+operations:
+  publishOrderCreated:
+    action: send
+    channel: { $ref: "#/channels/orderCreated" }
+    summary: order-service publikuje OrderCreatedEvent.
+  publishOrderCancelled:
+    action: send
+    channel: { $ref: "#/channels/orderCancelled" }
+    summary: order-service publikuje OrderCancelledEvent.
+components:
+  messages:
+    OrderCreatedEvent:
+      name: OrderCreatedEvent
+      title: Zamówienie utworzone
+      contentType: application/json
+      headers: { $ref: "#/components/schemas/CloudEventHeaders" }
+      payload: { $ref: "#/components/schemas/OrderCreatedPayload" }
+      bindings:
+        kafka:
+          key:
+            type: string
+            format: uuid
+            description: orderId (klucz partycji = id agregatu, EVT-TOPIC-1).
+          bindingVersion: "0.5.0"
+    OrderCancelledEvent:
+      name: OrderCancelledEvent
+      title: Zamówienie anulowane
+      contentType: application/json
+      headers: { $ref: "#/components/schemas/CloudEventHeaders" }
+      payload: { $ref: "#/components/schemas/OrderCancelledPayload" }
+      bindings:
+        kafka:
+          key:
+            type: string
+            format: uuid
+            description: orderId.
+          bindingVersion: "0.5.0"
+  schemas:
+    OrderCreatedPayload:
+      type: object
+      additionalProperties: false
+      required: [orderId, customerId, items, totalAmount]
+      description: EVT-PAYLOAD-1 — niesie items[] (wymóg NT-TRIG-1; audit EVT-4).
+      properties:
+        orderId: { type: string, format: uuid }
+        customerId: { type: string, format: uuid }
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: "../data-contracts/OrderLine.v1.yaml" }
+        totalAmount: { $ref: "../data-contracts/Money.v1.yaml" }
+    OrderCancelledPayload:
+      type: object
+      additionalProperties: false
+      required: [orderId, customerId, reason, previousStatus]
+      properties:
+        orderId: { type: string, format: uuid }
+        customerId: { type: string, format: uuid }
+        reason: { type: string, minLength: 1 }
+        previousStatus: { type: string, enum: [PENDING, CONFIRMED] }
+    CloudEventHeaders:
+      type: object
+      description: Koperta CloudEvents 1.0 (tryb binarny nad Kafką), EVT-ENV-1.
+      required: [ce_id, ce_type, ce_source, ce_time]
+      properties:
+        ce_id: { type: string, description: Unikalny id zdarzenia (klucz dedup). }
+        ce_type: { type: string, description: "Typ, np. OrderCreatedEvent (routing)." }
+        ce_source: { type: string, description: "Serwis-producent, np. order-service." }
+        ce_time: { type: string, format: date-time }
+        ce_dataschema: { type: string, format: uri }
+        traceparent: { type: string, description: W3C Trace Context (audit OBS-2). }

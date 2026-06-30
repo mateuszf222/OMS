@@ -1,0 +1,33 @@
+# Kanoniczny kształt domenowy — Adres.
+# STATUS: PLANOWANY. Brak w obecnej domenie OMS — zaprojektowany pod kontekst Shipping
+# (mapa kontekstów: raport audytu §2). Nie referować, dopóki Shipping nie wejdzie do kodu.
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://contracts.enterprise-oms.com/data-contracts/Address.v1.yaml"
+title: Address
+description: PLANOWANY — adres dostawy dla kontekstu Shipping.
+type: object
+additionalProperties: false
+required: [recipientName, street, city, postalCode, countryCode]
+properties:
+  recipientName:
+    type: string
+    minLength: 1
+    maxLength: 200
+  street:
+    type: string
+    minLength: 1
+    maxLength: 200
+  city:
+    type: string
+    minLength: 1
+    maxLength: 100
+  postalCode:
+    type: string
+    description: Format zależny od kraju; walidacja szczegółowa w kontekście Shipping.
+    minLength: 1
+    maxLength: 16
+  countryCode:
+    type: string
+    description: Kod kraju ISO 3166-1 alpha-2 (dwie wielkie litery).
+    pattern: '^[A-Z]{2}$'
+    examples: ["PL"]

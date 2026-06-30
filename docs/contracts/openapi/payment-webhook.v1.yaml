@@ -1,0 +1,74 @@
+# OpenAPI 3.1 — Payment Service: webhook PayU. Spec-first (06 §13).
+# Kontrakt ZEWNĘTRZNY: kształt narzuca PayU; nie stosujemy reguł *Request/Money z 06.
+# Bezpieczeństwo: podpis OpenPayu-Signature (NIE JWT). Idempotencja wg PY-IDEM-1.
+openapi: 3.1.0
+info:
+  title: Payment Service — PayU Webhook
+  version: 1.0.0
+  description: |
+    Odbiera notyfikacje PayU o zmianie statusu płatności. Gdy płatność jest już w stanie
+    COMPLETED/FAILED — ignorujemy i zwracamy 200 (PY-IDEM-1), aby zatrzymać ponowienia PayU.
+servers:
+  - url: /
+    description: Dostęp bezpośredni (np. ngrok), poza api-gateway.
+security:
+  - payuSignature: []
+tags:
+  - name: webhook
+paths:
+  /api/v1/payments/webhook:
+    post:
+      tags: [webhook]
+      operationId: onPayUWebhook
+      summary: Notyfikacja PayU o zmianie statusu płatności
+      x-status: AKTUALNY
+      parameters:
+        - name: OpenPayu-Signature
+          in: header
+          required: true
+          description: Podpis PayU; weryfikacja po stronie serwera (docelowo HMAC-SHA256, audit BezP-1).
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PayUNotification" }
+      responses:
+        "200":
+          description: Przyjęto (również gdy zignorowano wg PY-IDEM-1). Zatrzymuje ponowienia PayU.
+        "400":
+          description: Niepoprawny / niekompletny ładunek.
+          content:
+            application/problem+json:
+              schema: { $ref: "./_shared/problem.yaml#/components/schemas/ProblemDetail" }
+        "403":
+          description: Niepoprawny podpis.
+          content:
+            application/problem+json:
+              schema: { $ref: "./_shared/problem.yaml#/components/schemas/ProblemDetail" }
+        "500":
+          description: Błąd zastosowania statusu (PayU ponowi).
+          content:
+            application/problem+json:
+              schema: { $ref: "./_shared/problem.yaml#/components/schemas/ProblemDetail" }
+components:
+  securitySchemes:
+    payuSignature:
+      $ref: "./_shared/security/security-schemes.yaml#/components/securitySchemes/payuSignature"
+  schemas:
+    PayUNotification:
+      type: object
+      description: Podzbiór ładunku PayU (nieznane pola ignorowane). extOrderId = nasz paymentId.
+      additionalProperties: true
+      properties:
+        order:
+          type: object
+          additionalProperties: true
+          properties:
+            extOrderId:
+              type: string
+              format: uuid
+              description: Nasz identyfikator płatności (paymentId).
+            status:
+              type: string
+              description: Status PayU (COMPLETED / CANCELED / REJECTED / NEW / PENDING).

@@ -1,0 +1,41 @@
+# Kanoniczny kształt domenowy — agregat Order (wersja 2).
+# Transport-agnostyczny (JSON Schema 2020-12). Reguła DC-REF (06 §2).
+# x-changelog:
+#   v2 — dodano `items` (audit EVT-4: powiadomienia/konsumenci potrzebują pozycji) oraz
+#        `paymentId` (audit: Order utrwala powiązaną płatność dla śledzenia po CONFIRMED).
+#   v1 — orderId, customerId, status, totalAmount, createdAt.
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://contracts.enterprise-oms.com/data-contracts/Order.v2.yaml"
+title: Order
+description: >
+  Korzeń agregatu zamówienia (01 §Order). Status zgodny z maszyną stanów OR-STATE-1.
+  Kwoty wyłącznie jako Money. Częściowo realny — `paymentId`/`items` w eventach to cel (audit).
+type: object
+additionalProperties: false
+required: [orderId, customerId, status, items, totalAmount, createdAt]
+properties:
+  orderId:
+    type: string
+    format: uuid
+  customerId:
+    type: string
+    format: uuid
+    description: Identyfikator klienta z `sub` tokenu JWT (API-SEC-3) — nie z body.
+  status:
+    type: string
+    enum: [PENDING, CONFIRMED, CANCELLED]
+    description: OR-STATE-1. PENDING początkowy; CONFIRMED/CANCELLED końcowe.
+  items:
+    type: array
+    minItems: 1
+    items:
+      $ref: "./OrderLine.v1.yaml"
+  totalAmount:
+    $ref: "./Money.v1.yaml"
+  paymentId:
+    type: ["string", "null"]
+    format: uuid
+    description: Płatność, która potwierdziła zamówienie (ustawiane po CONFIRMED); null gdy brak.
+  createdAt:
+    type: string
+    format: date-time

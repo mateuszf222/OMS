@@ -633,3 +633,6 @@ Each service owns its local Java event records. The integration contract is the 
 - REST endpoints match the current controllers.
 - Kafka topic relationships match current `@KafkaListener` annotations and outbox relays.
 - Database ownership matches Flyway migrations.
+
+## License :page_with_curl:
+OMS is licensed under the GNU General Public License v3.0.

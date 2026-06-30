@@ -1,0 +1,49 @@
+# Spectral ruleset — maszynowe egzekwowanie API-* (06) i EVT-* (07).
+# Lintuje punkty wejścia: openapi/*.v1.yaml (OpenAPI 3.1) oraz events/*.v1.yaml (AsyncAPI 3.0).
+# Fragmenty _shared/ i data-contracts/ są walidowane tranzytywnie przez $ref.
+extends:
+  - "spectral:oas"
+  - "spectral:asyncapi"
+functionsDir: "./functions"
+functions:
+  - noMoneyInRequest
+  - requireIdempotencyKey
+rules:
+  api-no-money-in-request:
+    description: "API-SEC-1: zakaz kwot/cen w ciele żądania — kwoty wyznacza serwer (Catalog/Pricing)."
+    severity: error
+    formats: ["oas3"]
+    given: "$.paths[*][*].requestBody.content[*].schema"
+    then:
+      function: noMoneyInRequest
+
+  api-idempotency-key-on-post:
+    description: "API-IDEM-1: POST musi deklarować nagłówek Idempotency-Key (wyjątek: tag webhook)."
+    severity: error
+    formats: ["oas3"]
+    given: "$.paths[*].post"
+    then:
+      function: requireIdempotencyKey
+
+  evt-one-message-per-channel:
+    description: "EVT-TOPIC-1: jeden schemat = jeden topic (dokładnie jeden message na kanał)."
+    severity: error
+    formats: ["aas3"]
+    given: "$.channels[*].messages"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          minProperties: 1
+          maxProperties: 1
+
+  evt-channel-address-pattern:
+    description: "EVT: nazwa topicu = <domena>.<agregat>-events.<zdarzenie>.v<major>."
+    severity: error
+    formats: ["aas3"]
+    given: "$.channels[*].address"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[a-z]+\\.[a-z-]+-events\\.[a-z-]+\\.v\\d+$"

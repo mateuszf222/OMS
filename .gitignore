@@ -10,7 +10,8 @@ run_oms.ps1
 stop_oms.ps1
 curl.txt
 kafka.txt
-ARCHITECTURE.md
 flyway.txt
 codex.txt
-markdowns/
+docs/*
+!docs/contracts/
+docs/contracts/node_modules/

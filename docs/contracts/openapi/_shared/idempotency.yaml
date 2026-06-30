@@ -1,0 +1,25 @@
+# Mechanika HTTP współdzielona — idempotencja mutacji (06 §6, API-IDEM-1, OBOWIĄZKOWY).
+# Fragment komponentów OpenAPI 3.1. Reguła SH-REF (06 §2).
+openapi: 3.1.0
+info:
+  title: _shared/idempotency
+  version: "1.0.0"
+paths: {}
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+      description: >
+        Klucz idempotencji (UUID). Wymagany na POST tworzących zasób / nieidempotentnych.
+        Powtórka z tym samym kluczem → ta sama odpowiedź; ten sam klucz z innym body → 409.
+        Przechowywany w Redis (TTL 24h).
+  responses:
+    IdempotencyKeyReuse:
+      description: 409 — ten sam Idempotency-Key użyty z innym ładunkiem (type=idempotency-key-reuse).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "./problem.yaml#/components/schemas/ProblemDetail"

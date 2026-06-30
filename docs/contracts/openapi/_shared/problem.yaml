@@ -1,0 +1,92 @@
+# Mechanika HTTP współdzielona — model błędów RFC 7807 (06 §8, API-ERR-1).
+# Fragment komponentów OpenAPI 3.1. Serwisy referują: $ref "../_shared/problem.yaml#/components/...".
+# Reguła SH-REF (06 §2). Katalog `type` URI: przestrzeń https://errors.enterprise-oms.com/{kod}.
+openapi: 3.1.0
+info:
+  title: _shared/problem
+  version: "1.0.0"
+paths: {}
+components:
+  schemas:
+    ProblemDetail:
+      type: object
+      description: >
+        RFC 7807 Problem Details (application/problem+json). Pole `type` to realny URI —
+        NIGDY about:blank (API-ERR-1).
+      required: [type, title, status]
+      additionalProperties: true
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI typu błędu z przestrzeni https://errors.enterprise-oms.com/{kod}.
+          examples: ["https://errors.enterprise-oms.com/validation-failed"]
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 100
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        timestamp:
+          type: string
+          format: date-time
+        errors:
+          type: array
+          description: Szczegóły walidacji (dla validation-failed).
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field: { type: string }
+              message: { type: string }
+  responses:
+    # Każda odpowiedź serwuje application/problem+json ze schematem ProblemDetail.
+    ValidationFailed:
+      description: 400 — błąd walidacji *Request (type=validation-failed) lub malformed-request.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    Unauthorized:
+      description: 401 — brak/nieważny token (type=unauthorized).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    Forbidden:
+      description: 403 — brak roli / nie właściciel (type=forbidden).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    NotFound:
+      description: 404 — zasób nie istnieje lub należy do innego klienta (type=order-not-found).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    DomainRuleViolation:
+      description: 422 — naruszenie niezmiennika domeny (type=domain-rule-violation / product-not-available).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    Conflict:
+      description: 409 — konflikt stanu / blokada optymistyczna / reuse Idempotency-Key.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    RateLimited:
+      description: 429 — przekroczony limit (type=rate-limit-exceeded).
+      headers:
+        Retry-After:
+          schema: { type: integer }
+          description: Liczba sekund do ponowienia.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    InternalError:
+      description: 500 — błąd nieoczekiwany (type=internal-error).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }

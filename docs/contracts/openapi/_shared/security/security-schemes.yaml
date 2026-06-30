@@ -1,0 +1,23 @@
+# Mechanika HTTP współdzielona — schematy bezpieczeństwa (06 §9).
+# Fragment komponentów OpenAPI 3.1. Reguła SH-REF (06 §2).
+openapi: 3.1.0
+info:
+  title: _shared/security
+  version: "1.0.0"
+paths: {}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        OAuth2 Resource Server. JWT z Keycloak (realm enterprise-oms). Role z realm_access.roles
+        mapowane na ROLE_* (KeycloakJwtAuthenticationConverter). customerId = claim `sub` (API-SEC-3).
+    payuSignature:
+      type: apiKey
+      in: header
+      name: OpenPayu-Signature
+      description: >
+        Podpis webhooka PayU (NIE JWT). Weryfikacja po stronie serwera; docelowo HMAC-SHA256
+        stałoczasowo (audit BezP-1). Dotyczy wyłącznie POST /payments/webhook.

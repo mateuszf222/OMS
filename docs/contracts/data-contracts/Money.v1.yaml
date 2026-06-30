@@ -1,0 +1,28 @@
+# Kanoniczny kształt domenowy — Value Object Money.
+# Transport-agnostyczny (JSON Schema 2020-12): wspólny dla OpenAPI (sync) i AsyncAPI (async).
+# Reguła DC-REF (06 §2): nie definiuj Money inline w żadnym serwisie — referuj ten plik.
+# Decyzja D2: to jedyny kanon Money (brak duplikatu w _shared/).
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://contracts.enterprise-oms.com/data-contracts/Money.v1.yaml"
+title: Money
+description: >
+  Value Object kwoty pieniężnej (01 §Money). Kapsułkuje kwotę o wysokiej precyzji oraz kod
+  waluty ISO 4217. Niezmiennik OR-VAL-1: kwota nieujemna.
+type: object
+additionalProperties: false
+required: [amount, currency]
+properties:
+  amount:
+    type: string
+    description: >
+      Kwota dziesiętna jako string (precyzja decymalna, bez błędów IEEE-754). Dokładnie dwa
+      miejsca po przecinku (zgodnie z NUMERIC(15,2)). Wartość nieujemna (OR-VAL-1).
+      UWAGA konformancji: obecny kod serializuje BigDecimal jako liczbę JSON — do ujednolicenia
+      na string (osobne zadanie kod↔kontrakt).
+    pattern: '^\d+\.\d{2}$'
+    examples: ["150.00", "25.00"]
+  currency:
+    type: string
+    description: Kod waluty ISO 4217 (trzy wielkie litery). Multi-currency precyzja — przyszłe v2.
+    pattern: '^[A-Z]{3}$'
+    examples: ["PLN"]

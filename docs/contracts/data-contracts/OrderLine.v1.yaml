@@ -1,0 +1,25 @@
+# Kanoniczny kształt domenowy — pozycja zamówienia (OrderItem).
+# Transport-agnostyczny (JSON Schema 2020-12). Reguła DC-REF (06 §2).
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://contracts.enterprise-oms.com/data-contracts/OrderLine.v1.yaml"
+title: OrderLine
+description: >
+  Pozycja zakupowa wewnątrz agregatu Order (01 §OrderItem). Cena jednostkowa jako Money.
+type: object
+additionalProperties: false
+required: [productId, quantity, unitPrice]
+properties:
+  productId:
+    type: string
+    format: uuid
+    description: Identyfikator produktu z katalogu (Catalog/Pricing).
+  quantity:
+    type: integer
+    minimum: 1
+    maximum: 1000
+    description: >
+      Ilość > 0 (OR-VAL-1). Górny limit to guardrail wejścia (API-SEC-4, audit B2); autorytatywna
+      kontrola dostępności należy do kontekstu Inventory.
+  unitPrice:
+    description: Cena jednostkowa wyznaczona przez serwer z zaufanego źródła (API-SEC-1) — nigdy z requestu.
+    $ref: "./Money.v1.yaml"
