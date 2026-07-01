@@ -32,7 +32,7 @@ jobs:
       - name: Bundle kontraktu źródłowego (rozwiązanie $ref)
         run: npx --yes @redocly/cli@1 bundle docs/contracts/openapi/order-service.v1.yaml -o contract.json
 
-      - name: Drift (oasdiff: kod -> kontrakt)
+      - name: "Drift (oasdiff: kod -> kontrakt)"
         # base = kod (springdoc), revision = kontrakt. "breaking" tu = kontrakt usuwa/zmienia coś,
         # co kod wystawia => kod wystawia coś spoza/sprzecznego z kontraktem (FAIL). Endpointy
         # PLANOWANY w kontrakcie = dodatki = nie-breaking = OK (kod ich jeszcze nie ma).
